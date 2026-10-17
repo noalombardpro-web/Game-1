@@ -150,14 +150,15 @@ Voir [docs/ROADMAP.md](docs/ROADMAP.md). Honnêtement :
 
 Derniers résultats obtenus dans l'environnement de développement :
 
-- `npm test` : **8 fichiers, 90 tests unitaires, tous réussis** (graine, relief, biomes, POI, inventaire,
-  missions, survie, sauvegarde, IA, véhicules, bases, espace).
-- `npm run test:e2e` (Chromium headless, rendu logiciel) : **35 vérifications** — accueil, streaming,
-  marche, saut, panneaux, météo, collecte, rover, **tour de 6 biomes, nage en mer, buggy et drone,
-  placement de structures, décollage / vol / atterrissage du vaisseau**, scan, tir, mission, sauvegarde et
-  reprise, console sans erreur. Dernier run : 34/35, seul échec = scan de créature (cible mobile, test
-  aléatoire) ; relancé avec 25 essais au lieu de 12. Le placement de structures du dernier run vérifiait
-  mal son résultat (corrigé, non relancé).
+- `npm test` : **10 fichiers, 101 tests unitaires, tous réussis** (graine, relief, biomes, lacs, POI,
+  inventaire, missions, survie, sauvegarde, IA, véhicules, bases, espace, armes, construction rapide).
+- `npm run test:e2e` (Chromium headless, rendu logiciel) : **43 vérifications**, dont personnage chargé,
+  pistolet, fusil laser automatique, rechargement, jetpack, construction d'un mur et d'une rampe,
+  sauvegarde/reprise des constructions et chargeurs. Dernier run : **42/43** ; l'échec est le scan d'une
+  créature mobile (test aléatoire à ~1 image/s, il passait au run précédent).
+- Vérifié visuellement par captures (`tests/e2e/gear-probe.mjs`, `tests/e2e/shots.mjs`) : 3 personnages
+  animés, visée, vue 1re personne, édition d'un mur, lacs, flamants. Non vérifié dans le navigateur :
+  lance-roquettes, fusil à rail (zoom), outil de récolte, effondrement en jeu (couvert par les tests unitaires).
 - Non couvert par un test automatisé : audio (aucun rendu sonore vérifiable en headless), capture de la
   souris (pointer lock), remappage des touches, manette, rendu sur GPU réel, parties longues (fuites mémoire).
 

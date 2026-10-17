@@ -7,7 +7,7 @@ Toutes ces ressources sont redistribuées telles quelles (textures redimensionn�
 | Fichier | Source | Licence |
 |---|---|---|
 | grass.jpg | three.js `examples/textures/terrain/grasslight-big.jpg`, d'après OpenGameArt « dark grass » | CC-BY 3.0 |
-| dirt.jpg, sand.jpg, dry.jpg (ground.jpg), rock.jpg et rock_n.jpg (rockyGround), stone.jpg (floor.png), bark.jpg (woodAlbedo.png) | BabylonJS/Assets `textures/` | CC-BY 4.0 (BabylonJS) |
+| dirt.jpg, sand.jpg, dry.jpg (ground.jpg), rock.jpg (rockyGround), stone.jpg (floor.png) | BabylonJS/Assets `textures/` | CC-BY 4.0 (BabylonJS) |
 | snow.jpg | dérivée de rockyGround (BabylonJS/Assets) : désaturée et éclaircie | CC-BY 4.0 (BabylonJS) |
 | wood.jpg (hardwood2_diffuse), brick.jpg (brick_diffuse), lava.jpg (lavatile) | dépôt three.js `examples/textures/` | fournies avec three.js (MIT) — vérifier l'origine avant un usage commercial |
 
