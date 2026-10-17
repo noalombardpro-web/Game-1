@@ -1,0 +1,22 @@
+{
+  "spawn": { "x": 0, "z": 0 },
+  "points": [
+    {
+      "id": "camp", "name": "Camp de l'expédition Aurore", "type": "camp", "distance": [260, 340],
+      "log": "Le camp de l'expédition Aurore est désert. Les tentes sont intactes ; le relais de signal fonctionne encore sur batterie."
+    },
+    {
+      "id": "ruins", "name": "Ruines pré-humaines", "type": "ruins", "distance": [420, 520],
+      "log": "Piliers gravés d'un alphabet inconnu. Les sentinelles automatiques y sont toujours actives."
+    },
+    {
+      "id": "wreck", "name": "Épave de navette Halo", "type": "wreck", "distance": [600, 700],
+      "log": "Coque de navette fracturée. Un conteneur scellé contient des composants électroniques."
+    }
+  ],
+  "enemies": [
+    { "type": "ruin_turret", "poi": "ruins", "count": 2, "offset": 14 },
+    { "type": "sentinel_drone", "poi": "ruins", "count": 2, "offset": 30 },
+    { "type": "sentinel_drone", "poi": "wreck", "count": 2, "offset": 24 }
+  ]
+}

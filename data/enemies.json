@@ -1,0 +1,23 @@
+{
+  "enemies": {
+    "sentinel_drone": {
+      "name": "Drone sentinelle", "mobile": true, "hp": 90, "hover": 4.5,
+      "speed": { "patrol": 3.0, "chase": 8.0 }, "sight": 42, "fov": 130, "hearing": 28,
+      "detectRate": 0.7, "fireRange": 26, "fireCooldown": 1.6, "damage": 9, "keepDistance": 16,
+      "dropItem": "ore_metal", "dropCount": 2,
+      "description": "Drone de sécurité patrouillant les ruines. Il ne vous voit que dans son cône de vision."
+    },
+    "ruin_turret": {
+      "name": "Tourelle automatique", "mobile": false, "hp": 130, "hover": 2.2,
+      "speed": { "patrol": 0, "chase": 0 }, "sight": 36, "fov": 110, "hearing": 20,
+      "detectRate": 0.9, "fireRange": 30, "fireCooldown": 1.1, "damage": 12, "keepDistance": 0,
+      "dropItem": "electronic_part", "dropCount": 2,
+      "description": "Défense statique. Elle balaie son secteur et ouvre le feu dès qu'elle détecte une cible."
+    }
+  },
+  "difficulty": {
+    "easy":   { "enemyDamage": 0.6, "detectMultiplier": 0.7, "predatorAggression": 0.6 },
+    "normal": { "enemyDamage": 1.0, "detectMultiplier": 1.0, "predatorAggression": 1.0 },
+    "hard":   { "enemyDamage": 1.5, "detectMultiplier": 1.4, "predatorAggression": 1.4 }
+  }
+}

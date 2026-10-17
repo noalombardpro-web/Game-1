@@ -1,0 +1,27 @@
+{
+  "items": [
+    { "id": "ore_metal", "name": "Minerai métallique", "category": "resource", "stack": 99, "description": "Alliages bruts pour la fabrication." },
+    { "id": "mineral_silicate", "name": "Silicate minéral", "category": "resource", "stack": 99, "description": "Matière première des composites." },
+    { "id": "crystal_energy", "name": "Cristal énergétique", "category": "resource", "stack": 50, "description": "Stocke l'énergie. Source des cellules." },
+    { "id": "electronic_part", "name": "Composant électronique", "category": "resource", "stack": 50, "description": "Circuits récupérés sur les épaves." },
+    { "id": "bio_sample", "name": "Matériau biologique", "category": "resource", "stack": 50, "description": "Tissu analysable, base des kits de réparation." },
+    { "id": "alien_sample", "name": "Échantillon extraterrestre", "category": "resource", "stack": 20, "description": "Matière d'origine inconnue. Rare." },
+    { "id": "energy_cell", "name": "Cellule d'énergie", "category": "consumable", "stack": 10, "description": "Restaure 50 % d'énergie.", "effect": { "energy": 50 } },
+    { "id": "repair_kit", "name": "Kit de réparation", "category": "consumable", "stack": 10, "description": "Restaure 40 points d'intégrité.", "effect": { "integrity": 40 } },
+    { "id": "module_propulsion", "name": "Module propulsion", "category": "module", "slot": "propulsion", "stack": 1, "description": "+15 % de vitesse de course.", "effect": { "sprintBonus": 0.15 } },
+    { "id": "module_armor", "name": "Module blindage", "category": "module", "slot": "armor", "stack": 1, "description": "-20 % de dégâts reçus.", "effect": { "damageReduction": 0.2 } },
+    { "id": "module_sensors", "name": "Module capteurs", "category": "module", "slot": "sensors", "stack": 1, "description": "+35 % de portée de scan.", "effect": { "scanRangeBonus": 0.35 } },
+    { "id": "module_survival", "name": "Module survie", "category": "module", "slot": "survival", "stack": 1, "description": "Réduit la consommation thermique de moitié.", "effect": { "thermalFactor": 0.5 } },
+    { "id": "module_science", "name": "Module scientifique", "category": "module", "slot": "science", "stack": 1, "description": "+1 objet par conteneur analysé.", "effect": { "lootBonus": 1 } }
+  ],
+  "recipes": [
+    { "id": "craft_energy_cell", "output": { "item": "energy_cell", "count": 1 }, "ingredients": { "crystal_energy": 1, "mineral_silicate": 1 } },
+    { "id": "craft_repair_kit", "output": { "item": "repair_kit", "count": 1 }, "ingredients": { "ore_metal": 1, "bio_sample": 2 } },
+    { "id": "craft_module_propulsion", "output": { "item": "module_propulsion", "count": 1 }, "ingredients": { "ore_metal": 3, "electronic_part": 2 } },
+    { "id": "craft_module_armor", "output": { "item": "module_armor", "count": 1 }, "ingredients": { "ore_metal": 4, "mineral_silicate": 2 } },
+    { "id": "craft_module_sensors", "output": { "item": "module_sensors", "count": 1 }, "ingredients": { "electronic_part": 2, "crystal_energy": 1 } },
+    { "id": "craft_module_survival", "output": { "item": "module_survival", "count": 1 }, "ingredients": { "electronic_part": 1, "bio_sample": 2, "crystal_energy": 1 } },
+    { "id": "craft_module_science", "output": { "item": "module_science", "count": 1 }, "ingredients": { "electronic_part": 2, "mineral_silicate": 2 } }
+  ],
+  "capacity": 80
+}

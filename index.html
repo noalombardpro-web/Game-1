@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="data:," />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="PROJECT GENESIS — exploration et survie robotique en monde ouvert (prototype)." />
+  <title>PROJECT GENESIS</title>
+  <style>
+    :root {
+      --ink: #e8f7ff;
+      --muted: #9fb6c4;
+      --accent: #7fe9ff;
+      --warn: #ffb347;
+      --danger: #ff5d5d;
+      --panel: rgba(8, 16, 24, 0.82);
+      --line: rgba(127, 233, 255, 0.28);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) { --panel: rgba(8, 16, 24, 0.9); }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #05090e; color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+    canvas#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); font-size: 0.85em; }
+    button { font: inherit; color: var(--ink); background: rgba(127, 233, 255, 0.12); border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+    button:hover:not(:disabled) { background: rgba(127, 233, 255, 0.25); }
+    button:disabled { opacity: 0.4; cursor: default; }
+    button.small { padding: 3px 9px; font-size: 0.85em; }
+    button.ghost { background: transparent; }
+    button.active { background: rgba(127, 233, 255, 0.35); }
+    kbd { border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-family: ui-monospace, monospace; }
+
+    /* Start screen */
+    #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: radial-gradient(ellipse at 50% 30%, #0f2a3a 0%, #05090e 70%); z-index: 20; }
+    #start .card { width: min(440px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 28px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    #start h1 { margin: 0 0 4px; letter-spacing: 0.25em; font-size: clamp(1.4rem, 5vw, 2rem); color: var(--accent); }
+    #start p { color: var(--muted); margin: 6px 0 18px; line-height: 1.45; }
+    #start .stack { display: flex; flex-direction: column; gap: 10px; }
+    #start label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9em; color: var(--muted); }
+    #start input, #start select { font: inherit; color: var(--ink); background: #0b1822; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+
+    /* HUD */
+    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+    #status { position: absolute; left: 14px; top: 14px; width: min(260px, 46vw); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.85em; }
+    .bar { display: grid; grid-template-columns: 74px 1fr 34px; align-items: center; gap: 8px; margin: 6px 0; }
+    .bar .track { grid-column: 2; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .fill { height: 100%; width: 100%; background: linear-gradient(90deg, #2fd4ff, #7fe9ff); transition: width 0.2s; }
+    .fill.low { background: linear-gradient(90deg, #ff5d5d, #ffb347); }
+    .stat-row { display: flex; justify-content: space-between; color: var(--muted); margin-top: 6px; gap: 8px; }
+    #compass { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: min(460px, 60vw); height: 34px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+    #compass-strip { position: absolute; inset: 0; }
+    #compass .tick { position: absolute; top: 2px; transform: translateX(-50%); font-size: 12px; color: var(--muted); }
+    #compass .marker { position: absolute; bottom: 2px; transform: translateX(-50%); font-size: 11px; color: var(--warn); white-space: nowrap; }
+    #compass .marker.objective { color: var(--accent); }
+    #objective { position: absolute; top: 58px; left: 50%; transform: translateX(-50%); max-width: min(520px, 90vw); text-align: center; font-size: 0.9em; background: rgba(8,16,24,0.6); padding: 4px 12px; border-radius: 6px; color: var(--accent); }
+    #prompt { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); padding: 6px 14px; border-radius: 6px; font-size: 0.95em; white-space: nowrap; }
+    #scan-progress { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); width: 200px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+    #scan-card { position: absolute; right: 14px; top: 14px; width: min(300px, 44vw); background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 12px; font-size: 0.85em; }
+    #scan-card h3 { margin: 0 0 6px; color: var(--accent); font-size: 1em; }
+    #scan-card p { margin: 0 0 6px; line-height: 1.4; }
+    #scan-card dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; color: var(--muted); }
+    #scan-card dd { margin: 0; color: var(--ink); }
+    #radar { position: absolute; left: 14px; bottom: 14px; width: 150px; height: 150px; }
+    #cross { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%); }
+    #cross::before, #cross::after { content: ""; position: absolute; background: rgba(232,247,255,0.85); }
+    #cross::before { left: 6px; top: 0; width: 2px; height: 14px; }
+    #cross::after { top: 6px; left: 0; height: 2px; width: 14px; }
+    #cross.aim::before, #cross.aim::after { background: var(--danger); }
+    #toasts { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: min(360px, 80vw); }
+    .toast { background: var(--panel); border-left: 3px solid var(--accent); padding: 6px 10px; border-radius: 6px; font-size: 0.85em; animation: fade 5s forwards; }
+    .toast.warn { border-color: var(--warn); }
+    .toast.danger { border-color: var(--danger); }
+    .toast.good { border-color: #7dff9f; }
+    @keyframes fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+    #rover-hud { position: absolute; right: 14px; bottom: 170px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 0.85em; display: flex; flex-direction: column; gap: 3px; }
+    #perf { position: absolute; right: 14px; top: 14px; background: rgba(0,0,0,0.6); padding: 6px 8px; border-radius: 6px; font: 11px/1.4 ui-monospace, monospace; white-space: pre; color: #bff; }
+    #damage { position: absolute; inset: 0; box-shadow: inset 0 0 120px 40px rgba(255, 40, 40, 0.9); opacity: 0; transition: opacity 0.1s; }
+
+    /* Panels */
+    #panel { position: fixed; inset: 0; z-index: 25; background: rgba(2, 6, 10, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .sheet { width: min(900px, 100%); max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 20px; }
+    .sheet header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .sheet h2 { margin: 0; font-size: 1.2rem; color: var(--accent); }
+    .sheet h3 { font-size: 1rem; margin: 14px 0 6px; color: var(--accent); }
+    .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+    .list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(127,233,255,0.12); border-radius: 8px; font-size: 0.92em; }
+    .list li.done { opacity: 0.6; }
+    .list li.locked { opacity: 0.55; }
+    .list.log li { display: block; }
+    .list ul { list-style: none; padding-left: 4px; margin: 6px 0 0; }
+    .list.controls li { align-items: center; }
+    .tabs { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+    .stack { display: flex; flex-direction: column; gap: 10px; max-width: 360px; margin: 12px 0; }
+    #map-canvas { width: 100%; height: auto; max-height: 60vh; border-radius: 8px; border: 1px solid var(--line); background: #05090e; }
+
+    #error { position: fixed; inset: auto 16px 16px 16px; z-index: 30; background: #3a0d0d; border: 1px solid var(--danger); padding: 12px; border-radius: 8px; white-space: pre-wrap; font-size: 0.85em; }
+
+    @media (max-width: 640px) {
+      #status { width: calc(100vw - 28px); }
+      #scan-card { left: 14px; right: 14px; width: auto; top: auto; bottom: 170px; }
+      #radar { width: 110px; height: 110px; }
+      #rover-hud { bottom: 130px; }
+      #compass { width: calc(100vw - 28px); top: 150px; }
+      #objective { top: 196px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="scene" tabindex="0"></canvas>
+
+  <div id="start">
+    <div class="card">
+      <h1>PROJECT GENESIS</h1>
+      <p>Une expédition scientifique a perdu le contact. Votre robot explorateur est envoyé sur la planète. Explorez librement : les missions sont facultatives.</p>
+      <div class="stack">
+        <button id="btn-new" data-action="new-game">Nouvelle partie</button>
+        <button id="btn-continue" data-action="continue">Continuer</button>
+        <button data-action="open-settings">Paramètres</button>
+        <label>Graine du monde (optionnel)
+          <input id="seed-input" maxlength="32" placeholder="ex. aurore-42" autocomplete="off" />
+        </label>
+        <label>Difficulté
+          <select id="difficulty-input">
+            <option value="easy">Facile</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Difficile</option>
+          </select>
+        </label>
+        <p class="muted">Clic dans la scène pour capturer la souris. Commandes : menu Échap, touches rappelées dans les paramètres.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="hud" class="hidden">
+    <div id="status">
+      <div class="bar"><span>Énergie</span><div class="track"><div class="fill" id="bar-energy"></div></div><span id="val-energy"></span></div>
+      <div class="bar"><span>Intégrité</span><div class="track"><div class="fill" id="bar-integrity"></div></div><span id="val-integrity"></span></div>
+      <div class="stat-row"><span id="temp">— °C</span><span id="weather">—</span></div>
+      <div class="stat-row"><span id="biome">—</span><span id="clock">—</span></div>
+    </div>
+    <div id="compass"><div id="compass-strip"></div></div>
+    <div id="objective"></div>
+    <div id="scan-card" class="hidden"></div>
+    <div id="scan-progress" class="hidden"></div>
+    <div id="prompt" class="hidden"></div>
+    <div id="cross"></div>
+    <canvas id="radar" width="150" height="150"></canvas>
+    <div id="rover-hud" class="hidden"><span id="rover-speed"></span><span id="rover-energy"></span><span id="rover-hull"></span></div>
+    <div id="toasts"></div>
+    <div id="perf" class="hidden"></div>
+    <div id="damage"></div>
+  </div>
+
+  <div id="panel" class="hidden"></div>
+  <div id="error" class="hidden"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

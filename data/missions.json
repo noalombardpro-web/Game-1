@@ -1,0 +1,38 @@
+{
+  "missions": [
+    {
+      "id": "signal", "title": "Retrouver le signal Aurore",
+      "steps": [
+        { "id": "reach_camp", "type": "reach", "poi": "camp", "text": "Rejoindre le camp de l'expédition au nord-est." },
+        { "id": "scan_camp", "type": "scan", "poi": "camp", "text": "Scanner la balise de relais du camp (touche R)." }
+      ],
+      "reward": { "energy_cell": 2 },
+      "completion": "Le relais transmet un fragment de journal : l'équipe a suivi une anomalie vers les ruines."
+    },
+    {
+      "id": "fauna", "title": "Cataloguer la faune",
+      "steps": [
+        { "id": "scan_species", "type": "species", "count": 3, "text": "Scanner 3 espèces différentes (touche R sur un animal)." }
+      ],
+      "reward": { "repair_kit": 2 },
+      "completion": "Codex de faune mis à jour. Les espèces prédatrices sont signalées."
+    },
+    {
+      "id": "energy", "title": "Énergie de secours",
+      "steps": [
+        { "id": "collect_crystals", "type": "collect", "item": "crystal_energy", "count": 4, "text": "Collecter 4 cristaux énergétiques (touche E)." }
+      ],
+      "reward": { "module_sensors": 1 },
+      "completion": "Les cristaux alimentent le module de capteurs de secours."
+    },
+    {
+      "id": "ruins", "title": "Trace d'une civilisation",
+      "steps": [
+        { "id": "reach_ruins", "type": "reach", "poi": "ruins", "text": "Atteindre les ruines pré-humaines, en évitant les tourelles." },
+        { "id": "scan_ruins", "type": "scan", "poi": "ruins", "text": "Scanner l'inscription d'un pilier." }
+      ],
+      "reward": { "module_armor": 1 },
+      "completion": "L'inscription décrit une anomalie qui se propage à travers plusieurs mondes."
+    }
+  ]
+}
