@@ -1,31 +1,104 @@
 {
-  "_comment": "Default key bindings. Players can rebind any action from the Echap menu; overrides are stored locally.",
-  "bindings": {
-    "move_forward": ["KeyW", "ArrowUp"],
-    "move_back": ["KeyS", "ArrowDown"],
-    "move_left": ["KeyA", "ArrowLeft"],
-    "move_right": ["KeyD", "ArrowRight"],
-    "jump": ["Space"],
-    "sprint": ["ShiftLeft", "ShiftRight"],
-    "crouch": ["KeyC"],
-    "interact": ["KeyE"],
-    "lamp": ["KeyF"],
-    "scan": ["KeyR"],
-    "use": ["KeyU"],
-    "fire": ["Mouse0"],
-    "inventory": ["Tab"],
-    "map": ["KeyM"],
-    "journal": ["KeyJ"],
-    "codex": ["KeyK"],
-    "camera": ["KeyV"],
-    "perf": ["F3"],
-    "menu": ["Escape"]
-  },
-  "labels": {
-    "move_forward": "Avancer", "move_back": "Reculer", "move_left": "Gauche", "move_right": "Droite",
-    "jump": "Saut", "sprint": "Course", "crouch": "Accroupir", "interact": "Interagir / monter",
-    "lamp": "Lampe frontale", "scan": "Scanner", "use": "Utiliser un consommable", "fire": "Tir",
-    "inventory": "Inventaire / fabrication", "map": "Carte", "journal": "Journal de mission",
-    "codex": "Codex", "camera": "Changer de caméra", "perf": "Performances (F3)", "menu": "Menu"
-  }
+ "_comment": "Default key bindings. Players can rebind any action from the Echap menu; overrides are stored locally.",
+ "bindings": {
+  "move_forward": [
+   "KeyW",
+   "ArrowUp"
+  ],
+  "move_back": [
+   "KeyS",
+   "ArrowDown"
+  ],
+  "move_left": [
+   "KeyA",
+   "ArrowLeft"
+  ],
+  "move_right": [
+   "KeyD",
+   "ArrowRight"
+  ],
+  "jump": [
+   "Space"
+  ],
+  "sprint": [
+   "ShiftLeft",
+   "ShiftRight"
+  ],
+  "crouch": [
+   "KeyC"
+  ],
+  "interact": [
+   "KeyE"
+  ],
+  "lamp": [
+   "KeyF"
+  ],
+  "scan": [
+   "KeyR"
+  ],
+  "use": [
+   "KeyU"
+  ],
+  "fire": [
+   "Mouse0"
+  ],
+  "inventory": [
+   "Tab"
+  ],
+  "map": [
+   "KeyM"
+  ],
+  "journal": [
+   "KeyJ"
+  ],
+  "codex": [
+   "KeyK"
+  ],
+  "camera": [
+   "KeyV"
+  ],
+  "perf": [
+   "F3"
+  ],
+  "menu": [
+   "Escape"
+  ],
+  "build": [
+   "KeyB"
+  ],
+  "rotate_left": [
+   "KeyZ"
+  ],
+  "rotate_right": [
+   "KeyX"
+  ],
+  "dismantle": [
+   "KeyT"
+  ]
+ },
+ "labels": {
+  "move_forward": "Avancer",
+  "move_back": "Reculer",
+  "move_left": "Gauche",
+  "move_right": "Droite",
+  "jump": "Saut",
+  "sprint": "Course",
+  "crouch": "Accroupir",
+  "interact": "Interagir / monter",
+  "lamp": "Lampe frontale",
+  "scan": "Scanner",
+  "use": "Utiliser un consommable",
+  "fire": "Tir",
+  "inventory": "Inventaire / fabrication",
+  "map": "Carte",
+  "journal": "Journal de mission",
+  "codex": "Codex",
+  "camera": "Changer de caméra",
+  "perf": "Performances (F3)",
+  "menu": "Menu",
+  "build": "Construction",
+  "rotate_left": "Pivoter à gauche (construction)",
+  "rotate_right": "Pivoter à droite (construction)",
+  "dismantle": "Démonter une structure proche"
+ }
 }

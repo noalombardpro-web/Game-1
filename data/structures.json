@@ -1,0 +1,45 @@
+{
+  "_comment": "Base modules. power > 0 produces, power < 0 consumes. Structures within 60 m of each other share one power network.",
+  "linkRange": 60,
+  "refund": 0.6,
+  "structures": {
+    "habitat": {
+      "name": "Module d'habitat", "cost": { "ore_metal": 6, "fiber": 4, "mineral_silicate": 3 }, "power": -2, "radius": 3.2,
+      "description": "Abri pressurisé : répare l'intégrité et recharge l'énergie à proximité, permet de se reposer (E) et de sauvegarder."
+    },
+    "generator": {
+      "name": "Centrale énergétique", "cost": { "ore_metal": 5, "crystal_energy": 3, "electronic_part": 2 }, "power": 24, "radius": 2.4,
+      "upgrade": { "cost": { "ore_metal": 6, "rare_crystal": 1, "electronic_part": 3 }, "power": 16 },
+      "description": "Produit 24 unités d'énergie pour le réseau de la base et recharge le robot à proximité."
+    },
+    "storage": {
+      "name": "Entrepôt", "cost": { "ore_metal": 6, "fiber": 3 }, "power": 0, "radius": 2.6, "capacity": 200,
+      "upgrade": { "cost": { "ore_metal": 8, "fiber": 4 }, "capacity": 200 },
+      "description": "Stockage de 200 unités, partagé avec l'inventaire (E)."
+    },
+    "workbench": {
+      "name": "Établi de fabrication", "cost": { "ore_metal": 4, "electronic_part": 2 }, "power": -3, "radius": 1.9, "station": "workbench",
+      "description": "Débloque les modules et équipements de base dans l'inventaire (fabrication)."
+    },
+    "lab": {
+      "name": "Laboratoire scientifique", "cost": { "ore_metal": 8, "electronic_part": 6, "mineral_silicate": 4 }, "power": -8, "radius": 3.2, "station": "lab",
+      "description": "Débloque les équipements avancés (paliers 2) et analyse les échantillons rares."
+    },
+    "garage": {
+      "name": "Garage", "cost": { "ore_metal": 10, "electronic_part": 4 }, "power": -5, "radius": 4.2,
+      "description": "Construit des véhicules (E), répare et recharge ceux qui stationnent à moins de 14 m."
+    },
+    "comm": {
+      "name": "Tour de communication", "cost": { "ore_metal": 6, "electronic_part": 5 }, "power": -4, "radius": 1.5,
+      "description": "Étend le radar à 220 m et révèle sur la carte les lieux dans un rayon de 2 km."
+    },
+    "pad": {
+      "name": "Plateforme de lancement", "cost": { "ore_metal": 16, "electronic_part": 8, "crystal_energy": 4, "rare_crystal": 2 }, "power": -10, "radius": 7.5,
+      "description": "Permet de construire et de lancer un vaisseau spatial (E)."
+    },
+    "turret": {
+      "name": "Tourelle de défense", "cost": { "ore_metal": 5, "electronic_part": 3 }, "power": -3, "radius": 1.3, "range": 38, "damage": 16,
+      "description": "Tire automatiquement sur les ennemis et les prédateurs agressifs à moins de 38 m."
+    }
+  }
+}

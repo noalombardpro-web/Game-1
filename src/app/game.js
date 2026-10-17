@@ -15,6 +15,7 @@ import { CameraRig } from '../entities/cameraRig.js';
 import { CreatureManager } from '../entities/creatures.js';
 import { EnemyManager } from '../entities/enemies.js';
 import { VehicleManager } from '../vehicles/vehicle.js';
+import { BaseManager, canPlace } from '../bases/bases.js';
 import { Effects, Bubbles } from '../entities/effects.js';
 import { Inventory } from '../systems/inventory.js';
 import { Missions } from '../systems/missions.js';
@@ -37,7 +38,7 @@ const SCAN_RANGE = 45;
 const BOLT_RANGE = 70;
 const BOLT_COOLDOWN = 0.35;
 const WEAPON = { creature: 35, enemy: 40 };
-const PANEL_KEYS = { inventory: 'inventory', map: 'map', journal: 'journal', codex: 'codex' };
+const PANEL_KEYS = { inventory: 'inventory', map: 'map', journal: 'journal', codex: 'codex', build: 'build' };
 const DAY_MINUTES = 24 * 60;
 
 const dist2d = (ax, az, bx, bz) => Math.hypot(ax - bx, az - bz);
@@ -121,6 +122,21 @@ export class Game {
       perf: () => this.profiler.snapshot(),
       grant: (id, n) => this.inventory?.add(id, n),
       aimAt: (x, y, z) => this.rig?.aimAt(x, y, z),
+      /** Nearest location of a biome id around the player, searched on an expanding ring (test helper). */
+      findBiome: (id, maxR = 9000) => {
+        const px = this.player.pos.x;
+        const pz = this.player.pos.z;
+        for (let r = 0; r <= maxR; r += 150) {
+          const steps = Math.max(1, Math.floor((r * Math.PI * 2) / 150));
+          for (let k = 0; k < steps; k++) {
+            const a = (k / steps) * Math.PI * 2;
+            const x = px + Math.cos(a) * r;
+            const z = pz + Math.sin(a) * r;
+            if (this.biomeAt(x, z).id === id) return { x, z, h: this.terrain.height(x, z) };
+          }
+        }
+        return null;
+      },
       forceWeather: (kind) => { if (this.weather) { this.weather.kind = kind; this.weather.timer = 600; } },
       nearestNode: () => {
         const p = this.player.pos;
@@ -148,6 +164,7 @@ export class Game {
       timeOfDay: this.environment.timeOfDay,
       missions: this.missions.toJSON(),
       mounted: this.mounted ? { id: this.mounted.id, type: this.mounted.typeId } : null,
+      structures: this.bases.list.map((s) => ({ id: s.id, type: s.typeId, x: s.x, z: s.z, level: s.level, powered: s.powered, stored: s.stored })),
       vehicles: this.vehicles.list.map((v) => ({ id: v.id, type: v.typeId, x: v.x, y: v.y, z: v.z, speed: v.speed, energy: v.energy, hull: v.hull, seated: v.seated })),
       points: this.points.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z })),
       nearCreatures: this.creatures.near(this.player.pos.x, this.player.pos.z, 80).slice(0, 6).map((c) => ({
@@ -232,7 +249,9 @@ export class Game {
     this.rig.yaw = spawn.yaw;
     this.inventory = new Inventory(this.content, data?.inventory);
     this.missions = new Missions(this.content, data?.missions);
-    this.codex = { species: new Set(data?.codex?.species ?? []), points: new Set(data?.codex?.points ?? []) };
+    this.codex = { species: new Set(data?.codex?.species ?? []), points: new Set(data?.codex?.points ?? []), visited: new Set(data?.codex?.visited ?? []) };
+    this.buildMode = null;
+    this.selectedStructure = null;
 
     this.points = placePoints(this.terrain, this.content.world, this.seed);
     this.pointVisuals = new Map();
@@ -250,6 +269,8 @@ export class Game {
     this.mounted = null;
     if (data?.vehicles?.length) this.vehicles.restore(data.vehicles);
     else this.vehicles.add('rover', spawn.x + 5, spawn.z + 4, 0);
+    this.bases = new BaseManager({ scene: this.scene, world: this.world, data: this.content.structures });
+    this.bases.restore(data?.structures);
     this.logEntries = [];
     this.world.update(this.player.pos.x, this.player.pos.z, 8);
     this.autosaveTimer = AUTOSAVE_SECONDS;
@@ -303,7 +324,9 @@ export class Game {
   handleMenuKeys() {
     if (this.state === 'start') return;
     if (this.input.pressed('menu')) {
-      if (this.ui.panel) {
+      if (this.buildMode) {
+        this.cancelBuild();
+      } else if (this.ui.panel) {
         this.onAction('close');
       } else if (this.state === 'playing') {
         this.openPause();
@@ -349,7 +372,12 @@ export class Game {
       missions: this.missions,
       logEntries: this.logEntries,
       codex: { species: [...this.codex.species], points: [...this.codex.points] },
-      points: this.points,
+      points: this.discoveredPoints(),
+      allPoints: this.points,
+      structures: this.bases ? this.bases.list : [],
+      structureDefs: this.content.structures,
+      structure: this.selectedStructure,
+      station: this.bases ? this.bases.bestStation(this.player.pos.x, this.player.pos.z) : 'hand',
       settings: this.settings,
       bindings: this.bindings,
       hasSave: this.saves.hasSave,
@@ -380,6 +408,8 @@ export class Game {
     this.autosaveTimer -= dt;
 
     if (this.input.pressed('camera')) this.rig.toggleMode();
+    if (this.input.pressed('dismantle')) this.dismantleNearest();
+    if (this.buildMode) this.updateBuild();
     if (this.input.pressed('interact')) this.interact();
     if (this.input.pressed('scan')) this.scan();
     if (this.input.pressed('use')) this.useConsumable();
@@ -408,7 +438,10 @@ export class Game {
 
     const biome = this.biomeAt(player.pos.x, player.pos.z);
     const daylight = this.environment.daylight;
-    this.robot.tick(dt, { target: thermalTarget(biome.id, daylight, player.pos.y), thermalFactor: this.inventory.effects.thermalFactor });
+    // Survival modules reduce both the thermal drain and how far the components drift from 18 degC.
+    const thermal = this.inventory.effects.thermalFactor;
+    const rawTarget = thermalTarget(biome.id, daylight, player.pos.y);
+    this.robot.tick(dt, { target: 18 + (rawTarget - 18) * (0.4 + 0.6 * thermal), thermalFactor: thermal });
     if (this.robot.energy <= 0) this.robot.damage(0.3 * dt);
     if (this.robot.destroyed) this.onRobotDestroyed();
 
@@ -440,6 +473,10 @@ export class Game {
     this.enemies.update(dt, playerState);
     for (const loot of this.enemies.drainLoot()) this.grant(loot.item, loot.count);
 
+    this.bases.update({
+      dt, player: { x: player.pos.x, z: player.pos.z, robot: this.robot }, vehicles: this.vehicles, mounted,
+      enemies: this.enemies, creatures: this.creatures, effects: this.effects
+    });
     this.updateObjectives();
     this.effects.update(dt);
 
@@ -499,6 +536,12 @@ export class Game {
     const vehicle = this.vehicles.nearest(p.x, p.z, 5);
     if (vehicle) {
       this.mount(vehicle);
+      return;
+    }
+    const structure = this.bases.nearest(p.x, p.z, 3);
+    if (structure) {
+      this.selectedStructure = structure;
+      this.openPanel('structure');
       return;
     }
     let nearest = null;
@@ -574,7 +617,7 @@ export class Game {
 
   /** Fires the robot's plasma weapon (auto-fire while held, with a cooldown). */
   fire() {
-    if (this.weaponCooldown > 0 || this.robot.destroyed) return;
+    if (this.buildMode || this.weaponCooldown > 0 || this.robot.destroyed) return;
     if (this.robot.tool <= 0) {
       this.ui.toast('Arme hors service : réparez vos outils.', 'danger');
       this.weaponCooldown = 1;
@@ -653,7 +696,8 @@ export class Game {
   craft(recipeId) {
     const recipe = this.content.recipes.find((r) => r.id === recipeId);
     if (!recipe) return;
-    const result = this.inventory.craft(recipe);
+    const p = this.player.pos;
+    const result = this.inventory.craft(recipe, this.bases.bestStation(p.x, p.z));
     this.ui.toast(result.message, result.ok ? 'good' : 'warn');
     if (result.ok) this.audio.playChime();
     this.refreshPanel();
@@ -742,6 +786,13 @@ export class Game {
   // ---- Missions and objectives ------------------------------------------
 
   updateObjectives() {
+    for (const poi of this.points) {
+      if (!this.codex.visited.has(poi.id) && dist2d(this.player.pos.x, this.player.pos.z, poi.x, poi.z) < 90) {
+        this.codex.visited.add(poi.id);
+        this.ui.toast(`Lieu découvert : ${poi.name}`, 'good');
+        this.addLog(`Découverte : ${poi.name}`);
+      }
+    }
     const step = this.missions.step;
     if (step?.type === 'reach') {
       const poi = this.points.find((p) => p.id === step.poi);
@@ -796,6 +847,13 @@ export class Game {
     if (this.logEntries.length > 40) this.logEntries.length = 40;
   }
 
+  /** Places the player knows about: visited, scanned, or within the range of a communication tower. */
+  discoveredPoints() {
+    const p = this.player?.pos;
+    return this.points.filter((poi) => this.codex.visited.has(poi.id) || this.codex.points.has(poi.id)
+      || (this.bases?.hasComm && p && dist2d(p.x, p.z, poi.x, poi.z) < 2000));
+  }
+
   objectiveTarget() {
     const step = this.missions?.step;
     if (!step || !step.poi) return null;
@@ -832,11 +890,14 @@ export class Game {
     const biome = this.biomeAt(p.x, p.z);
     const step = this.missions.step;
     const target = this.objectiveTarget();
+    const radarRange = this.bases.hasComm ? 220 : 80;
     const aiming = this.enemies.enemies.some((e) => e.alive && e.fsm.current === 'combat');
     let prompt = null;
     if (!this.mounted) {
       const near = this.vehicles.nearest(p.x, p.z, 5);
+      const structure = this.bases.nearest(p.x, p.z, 3);
       if (near) prompt = `[E] Monter : ${near.name}${near.disabled ? ' (hors service)' : ''}`;
+      else if (structure) prompt = `[E] Utiliser : ${structure.def.name}${structure.powered ? '' : ' (hors tension)'}`;
       else {
         const node = this.world.nodesNear(p.x, p.z).find((n) => dist2d(p.x, p.z, n.x, n.z) < INTERACT_RANGE);
         if (node) prompt = `[E] Collecter : ${this.content.itemsById[node.item].name}`;
@@ -846,11 +907,15 @@ export class Game {
     } else {
       prompt = `[E] Descendre : ${this.mounted.name}`;
     }
+    if (this.buildMode) {
+      const def = this.content.structures.structures[this.buildMode.type];
+      prompt = `${def.name} — ${this.buildMode.valid ? 'clic gauche : poser' : this.buildMode.reason}`;
+    }
     const objectiveText = this.missions.finished
       ? 'Missions principales terminées — exploration libre'
       : `${this.missions.mission.title} — ${step?.text ?? ''}`;
     const markers = [];
-    const pointsForCompass = target ? [target] : this.points;
+    const pointsForCompass = target ? [target] : [];
     for (const poi of pointsForCompass) {
       const d = dist2d(p.x, p.z, poi.x, poi.z);
       if (d > 1200) continue;
@@ -875,10 +940,11 @@ export class Game {
         depth: this.mounted.kind === 'sub' ? this.mounted.depth : null
       } : null,
       markers,
+      radarRange,
       radar: {
-        creatures: this.creatures.near(p.x, p.z, 70).map((c) => ({ x: c.x, z: c.z, predator: c.isPredator })),
-        enemies: this.enemies.near(p.x, p.z, 90).map((e) => ({ x: e.x, z: e.z })),
-        points: this.points.filter((poi) => dist2d(p.x, p.z, poi.x, poi.z) < 150).map((poi) => ({ x: poi.x, z: poi.z }))
+        creatures: this.creatures.near(p.x, p.z, radarRange).map((c) => ({ x: c.x, z: c.z, predator: c.isPredator })),
+        enemies: this.enemies.near(p.x, p.z, radarRange).map((e) => ({ x: e.x, z: e.z })),
+        points: this.discoveredPoints().filter((poi) => dist2d(p.x, p.z, poi.x, poi.z) < radarRange * 1.8).map((poi) => ({ x: poi.x, z: poi.z }))
       },
       objectiveTarget: target,
       player: { x: p.x, z: p.z },
@@ -905,7 +971,8 @@ export class Game {
       robot: this.robot.toJSON(),
       inventory: this.inventory.toJSON(),
       missions: this.missions.toJSON(),
-      codex: { species: [...this.codex.species], points: [...this.codex.points] },
+      codex: { species: [...this.codex.species], points: [...this.codex.points], visited: [...this.codex.visited] },
+      structures: this.bases.toJSON(),
       collected: [...this.world.collected],
       vehicles: this.vehicles.toJSON(),
       clock: { timeOfDay: this.environment.timeOfDay }
@@ -928,6 +995,130 @@ export class Game {
   }
 
   // ---- Menus and settings ------------------------------------------------
+
+  // ---- Bases and building -----------------------------------------------
+
+  startBuild(typeId) {
+    this.ui.closePanel();
+    if (this.state === 'panel') this.state = 'playing';
+    this.buildMode = { type: typeId, yaw: this.rig.yaw, valid: false, x: 0, z: 0 };
+    this.bases.setGhost(typeId);
+    this.capturePointer();
+    this.ui.toast(`Construction : ${this.content.structures.structures[typeId].name}. Clic gauche pour poser, Z/X pivoter, Échap annuler.`, 'info');
+  }
+
+  cancelBuild() {
+    this.buildMode = null;
+    this.bases.setGhost(null);
+  }
+
+  updateBuild() {
+    const b = this.buildMode;
+    const origin = this.rig.camera.position;
+    const dir = this.rig.forward();
+    const t = rayTerrain(this.world, origin, dir, 45, 0.5);
+    let x = origin.x + dir.x * t;
+    let z = origin.z + dir.z * t;
+    const p = this.player.pos;
+    const d = dist2d(x, z, p.x, p.z);
+    if (d > 26) { x = p.x + ((x - p.x) / d) * 26; z = p.z + ((z - p.z) / d) * 26; }
+    if (this.input.pressed('rotate_left')) b.yaw += Math.PI / 8;
+    if (this.input.pressed('rotate_right')) b.yaw -= Math.PI / 8;
+    const def = this.content.structures.structures[b.type];
+    const check = canPlace(this.world, this.bases.list, this.content.structures.structures, b.type, x, z);
+    const affordable = this.bases.affordable(this.inventory, def.cost);
+    b.valid = check.ok && affordable;
+    b.reason = !check.ok ? check.reason : !affordable ? 'Ressources insuffisantes.' : '';
+    this.bases.moveGhost(x, z, b.yaw, b.valid);
+    if (this.input.pressed('fire')) {
+      if (!b.valid) {
+        this.ui.toast(b.reason, 'warn');
+      } else {
+        const result = this.bases.place(this.inventory, b.type, x, z, b.yaw);
+        if (result.ok) {
+          this.audio.playChime();
+          this.effects.burst({ x, y: this.world.heightAt(x, z) + 1, z }, '#9bd1ff', 2.4, 0.5);
+          this.ui.toast(`${def.name} construit.`, 'good');
+          if (!this.bases.affordable(this.inventory, def.cost)) this.cancelBuild();
+        } else {
+          this.ui.toast(result.reason, 'warn');
+        }
+      }
+    }
+  }
+
+  dismantleNearest() {
+    const p = this.player.pos;
+    const s = this.bases.nearest(p.x, p.z, 8);
+    if (s) this.dismantle(s);
+  }
+
+  dismantle(structure) {
+    if (!structure) return;
+    const { refund, lost } = this.bases.dismantle(this.inventory, structure);
+    this.selectedStructure = null;
+    this.ui.closePanel();
+    if (this.state === 'panel') this.state = 'playing';
+    this.ui.toast(`Structure démontée${lost ? ` (${lost} unités perdues faute de place)` : ''}.`, 'info');
+    this.capturePointer();
+    return refund;
+  }
+
+  rest() {
+    const s = this.selectedStructure;
+    if (!s || !s.powered) {
+      this.ui.toast('Le module n’est pas alimenté.', 'warn');
+      return;
+    }
+    this.robot.repair(100);
+    this.robot.recharge(100);
+    this.robot.repairTools(100);
+    this.environment.setTime(this.environment.timeOfDay + 4 / 24);
+    this.save(false);
+    this.ui.toast('Repos terminé : intégrité, énergie et outils restaurés. Partie sauvegardée.', 'good');
+  }
+
+  /** Moves items between the inventory and the selected storage. */
+  transfer(direction, payload) {
+    const s = this.selectedStructure;
+    if (!s || s.typeId !== 'storage') return;
+    const [id, amountText] = payload.split(':');
+    if (direction === 'deposit') {
+      const want = amountText === 'all' ? this.inventory.count(id) : Math.min(Number(amountText), this.inventory.count(id));
+      const room = Math.max(0, s.capacity - s.stored);
+      const n = Math.min(want, room);
+      if (n > 0 && this.inventory.remove(id, n)) s.storage[id] = (s.storage[id] ?? 0) + n;
+      else if (want > 0) this.ui.toast('Entrepôt plein.', 'warn');
+    } else {
+      const have = s.storage[id] ?? 0;
+      const got = this.inventory.add(id, Math.min(Number(amountText), have));
+      if (got > 0) {
+        s.storage[id] -= got;
+        if (s.storage[id] <= 0) delete s.storage[id];
+      } else {
+        this.ui.toast('Inventaire plein.', 'warn');
+      }
+    }
+    this.refreshPanel();
+  }
+
+  buildVehicle(typeId) {
+    const s = this.selectedStructure;
+    const cfg = this.content.vehicles[typeId];
+    if (!s || s.typeId !== 'garage' || !cfg?.cost || !s.powered) return;
+    if (!this.bases.affordable(this.inventory, cfg.cost)) {
+      this.ui.toast('Ressources insuffisantes.', 'warn');
+      return;
+    }
+    this.bases.spend(this.inventory, cfg.cost);
+    const d = s.def.radius + cfg.radius + 1.5;
+    const x = s.x + Math.sin(s.yaw) * d;
+    const z = s.z + Math.cos(s.yaw) * d;
+    this.vehicles.add(typeId, x, z, s.yaw);
+    this.audio.playChime();
+    this.ui.toast(`${cfg.name} construit devant le garage.`, 'good');
+    this.refreshPanel();
+  }
 
   applySettings() {
     saveSettings(this.storage, this.settings);
@@ -990,6 +1181,32 @@ export class Game {
         return;
       case 'use':
         this.useConsumable();
+        return;
+      case 'select-structure':
+        this.startBuild(payload);
+        return;
+      case 'rest':
+        this.rest();
+        return;
+      case 'open-craft':
+        this.ui.tab = 'craft';
+        this.openPanel('inventory');
+        return;
+      case 'upgrade': {
+        const r = this.bases.upgrade(this.inventory, this.selectedStructure);
+        this.ui.toast(r.ok ? 'Structure améliorée.' : r.reason, r.ok ? 'good' : 'warn');
+        this.refreshPanel();
+        return;
+      }
+      case 'dismantle-structure':
+        this.dismantle(this.selectedStructure);
+        return;
+      case 'deposit':
+      case 'withdraw':
+        this.transfer(name, payload);
+        return;
+      case 'build-vehicle':
+        this.buildVehicle(payload);
         return;
       case 'craft':
         this.craft(payload);

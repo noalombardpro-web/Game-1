@@ -46,6 +46,7 @@ export class World {
     this.queued = new Map();
     this.wanted = new Map();
     this.results = [];
+    this.dynamicColliders = new Float32Array(0);
     this.nextRequestId = 1;
     this.workers = [];
     this.syncFallback = false;
@@ -240,7 +241,12 @@ export class World {
     return out;
   }
 
-  /** Colliders (x, z, radius) around (x, z), as a flat array. */
+  /** Solid objects that are not part of the terrain chunks (base structures). */
+  setDynamicColliders(array) {
+    this.dynamicColliders = array;
+  }
+
+  /** Colliders (x, z, radius) around (x, z), as flat arrays. */
   collidersNear(x, z) {
     const out = [];
     const cx = Math.floor(x / CHUNK_SIZE);
@@ -251,6 +257,7 @@ export class World {
         if (chunk) out.push(chunk.colliders);
       }
     }
+    if (this.dynamicColliders.length) out.push(this.dynamicColliders);
     return out;
   }
 

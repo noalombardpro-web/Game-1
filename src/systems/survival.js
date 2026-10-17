@@ -8,7 +8,8 @@ export const MAX_STAT = 100;
 export function thermalTarget(biomeId, dayFactor, altitude) {
   const base = {
     desert: 38, jungle: 30, meadow: 20, temperate_forest: 18, conifer_forest: 12,
-    wetland: 18, rocky_plateau: 16, tundra: -12, snow_peaks: -22, lake_bed: 14
+    wetland: 18, rocky_plateau: 16, tundra: -12, snow_peaks: -22, lake_bed: 14,
+    abyss: 4, kelp_forest: 10, coral_reef: 22, volcanic: 52, crater: 22, canyon: 36, polar_ice: -28
   }[biomeId] ?? 18;
   const dayBonus = (dayFactor - 0.5) * 2 * (biomeId === 'desert' ? 14 : 6);
   const altitudeCooling = Math.max(0, altitude - 60) * -0.05;

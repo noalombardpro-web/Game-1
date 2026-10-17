@@ -164,7 +164,7 @@ export class UI {
     const ctx = this.radar;
     const size = 150;
     const r = 70;
-    const scale = r / 80;
+    const scale = r / (s.radarRange ?? 80);
     ctx.clearRect(0, 0, size, size);
     ctx.fillStyle = 'rgba(8, 16, 24, 0.7)';
     ctx.beginPath();
@@ -228,9 +228,14 @@ export class UI {
       journal: () => this.journalHtml(d),
       codex: () => this.codexHtml(d),
       settings: () => this.settingsHtml(d),
-      pause: () => this.pauseHtml(d)
+      pause: () => this.pauseHtml(d),
+      build: () => this.buildHtml(d),
+      structure: () => this.structureHtml(d)
     };
-    const titles = { inventory: 'Inventaire & fabrication', map: 'Carte', journal: 'Journal de mission', codex: 'Codex', settings: 'Paramètres', pause: 'Pause' };
+    const titles = {
+      inventory: 'Inventaire & fabrication', map: 'Carte', journal: 'Journal de mission', codex: 'Codex', settings: 'Paramètres', pause: 'Pause',
+      build: 'Construction', structure: d.structure ? d.structure.def.name : 'Structure'
+    };
     const content = renderers[name]();
     root.innerHTML = `<div class="sheet"><header><h2>${titles[name]}</h2><button data-action="close" class="ghost">Fermer (Échap)</button></header>${content}</div>`;
     if (name === 'map') this.paintMap(d);
@@ -252,13 +257,17 @@ export class UI {
       return `${tabsHtml}${capacityHtml}<ul class="list">${rows || '<li class="muted">Inventaire vide. Collectez des ressources avec E.</li>'}</ul>`;
     }
     if (this.tab === 'craft') {
+      const stationName = { hand: 'kit portable', workbench: 'établi', lab: 'laboratoire' };
+      const rank = { hand: 0, workbench: 1, lab: 2 };
       const rows = content.recipes.map((r) => {
         const out = content.itemsById[r.output.item];
-        const ing = Object.entries(r.ingredients).map(([id, n]) => `${content.itemsById[id].name} ${inventory.count(id)}/${n}`).join(' · ');
-        const ok = Object.entries(r.ingredients).every(([id, n]) => inventory.count(id) >= n);
-        return `<li><span><b>${esc(out.name)}</b><br><small class="muted">${esc(ing)}</small></span><button data-action="craft" data-value="${r.id}" class="small" ${ok ? '' : 'disabled'}>Fabriquer</button></li>`;
+        const ing = Object.entries(r.ingredients).map(([id, n]) => `<span style="color:${inventory.count(id) >= n ? 'inherit' : '#ff8a8a'}">${esc(content.itemsById[id].name)} ${inventory.count(id)}/${n}</span>`).join(' · ');
+        const hasStation = rank[d.station] >= rank[r.station ?? 'hand'];
+        const ok = hasStation && Object.entries(r.ingredients).every(([id, n]) => inventory.count(id) >= n);
+        const need = hasStation ? '' : ` <small style="color:#ffb347">(nécessite : ${stationName[r.station]})</small>`;
+        return `<li><span><b>${esc(out.name)}</b>${need}<br><small class="muted">${ing}</small></span><button data-action="craft" data-value="${r.id}" class="small" ${ok ? '' : 'disabled'}>Fabriquer</button></li>`;
       }).join('');
-      return `${tabsHtml}${capacityHtml}<ul class="list">${rows}</ul>`;
+      return `${tabsHtml}${capacityHtml}<p class="muted">Station disponible : ${stationName[d.station]}</p><ul class="list">${rows}</ul>`;
     }
     const slots = MODULE_SLOTS.map((slot) => {
       const id = inventory.modules[slot];
@@ -318,6 +327,7 @@ export class UI {
     for (const e of d.enemies) dot(e.x, e.z, '#ff3b3b', 'tri', 5);
     if (d.objectiveTarget) dot(d.objectiveTarget.x, d.objectiveTarget.z, '#7fe9ff', 'diamond', 8);
     for (const v of d.vehicles) dot(v.x, v.z, '#e0873a', 'circle', 6);
+    for (const b of d.structures) dot(b.x, b.z, '#9bd1ff', 'diamond', 4);
     dot(d.player.x, d.player.z, '#7fe9ff', 'circle', 6);
     ctx.fillStyle = '#e8f7ff';
     ctx.font = '13px system-ui, sans-serif';
@@ -344,12 +354,12 @@ export class UI {
       const known = d.codex.species.includes(s.id);
       return `<li class="${known ? '' : 'locked'}"><b>${known ? esc(s.name) : '???'}</b> <small class="muted">${known ? `${esc(s.diet)} · ${esc(s.temperament)} · ${s.size.length} m` : 'Non scanné'}</small>${known ? `<br><small>${esc(s.description)}</small>` : ''}</li>`;
     }).join('');
-    const points = d.points.map((p) => {
+    const points = d.allPoints.map((p) => {
       const known = d.codex.points.includes(p.id);
       return `<li class="${known ? '' : 'locked'}"><b>${known ? esc(p.name) : '???'}</b>${known ? `<br><small>${esc(p.log)}</small>` : ''}</li>`;
     }).join('');
     return `<div class="split"><div><h3>Faune (${d.codex.species.length}/${this.content.species.length})</h3><ul class="list">${species}</ul></div>
-      <div><h3>Lieux (${d.codex.points.length}/${d.points.length})</h3><ul class="list">${points}</ul></div></div>`;
+      <div><h3>Lieux (${d.codex.points.length}/${d.allPoints.length})</h3><ul class="list">${points}</ul></div></div>`;
   }
 
   settingsHtml(d) {
@@ -373,6 +383,48 @@ export class UI {
       </div>
       <div><h3>Commandes</h3><ul class="list controls">${rows}</ul><p class="muted" id="rebind-hint"></p></div>
     </div>`;
+  }
+
+  buildHtml(d) {
+    const rows = Object.entries(d.structureDefs.structures).map(([id, def]) => {
+      const cost = Object.entries(def.cost).map(([item, n]) => `<span style="color:${d.inventory.count(item) >= n ? 'inherit' : '#ff8a8a'}">${esc(d.content.itemsById[item].name)} ${d.inventory.count(item)}/${n}</span>`).join(' · ');
+      const ok = Object.entries(def.cost).every(([item, n]) => d.inventory.count(item) >= n);
+      const power = def.power > 0 ? `+${def.power} énergie` : def.power < 0 ? `${def.power} énergie` : 'sans énergie';
+      return `<li><span><b>${esc(def.name)}</b> <small class="muted">(${power})</small><br><small class="muted">${esc(def.description)}</small><br><small>${cost}</small></span>
+        <button class="small" data-action="select-structure" data-value="${id}" ${ok ? '' : 'disabled'}>Placer</button></li>`;
+    }).join('');
+    return `<p class="muted">Viser le sol, clic gauche pour poser, Z / X pour pivoter, Échap pour annuler. T démonte la structure la plus proche (60 % des ressources rendus).</p><ul class="list">${rows}</ul>`;
+  }
+
+  structureHtml(d) {
+    const s = d.structure;
+    if (!s) return '<p class="muted">Aucune structure à proximité.</p>';
+    const def = s.def;
+    const status = s.powered ? '<span style="color:#7dff9f">alimentée</span>' : '<span style="color:#ff8a8a">hors tension (énergie insuffisante)</span>';
+    const net = s.networkSupply !== undefined ? ` · réseau ${s.networkSupply} / ${s.networkDemand}` : '';
+    let body = `<p class="muted">${esc(def.description)}</p><p>Niveau ${s.level} · ${status}${net}</p>`;
+    const buttons = [];
+    if (s.typeId === 'habitat') buttons.push('<button data-action="rest">Se reposer (réparation complète, sauvegarde, +4 h)</button>');
+    if (s.typeId === 'lab' || s.typeId === 'workbench') buttons.push('<button data-action="open-craft">Ouvrir la fabrication</button>');
+    if (def.upgrade) {
+      const cost = Object.entries(def.upgrade.cost).map(([item, n]) => `${d.content.itemsById[item].name} ${n}`).join(', ');
+      buttons.push(`<button data-action="upgrade" ${s.level >= 2 ? 'disabled' : ''}>Améliorer (${esc(cost)})</button>`);
+    }
+    buttons.push('<button data-action="dismantle-structure">Démonter</button>');
+    if (s.typeId === 'storage') {
+      const stored = Object.entries(s.storage).map(([id, n]) => `<li><span>${esc(d.content.itemsById[id].name)} × ${n}</span><span><button class="small" data-action="withdraw" data-value="${id}:1">−1</button> <button class="small" data-action="withdraw" data-value="${id}:10">−10</button></span></li>`).join('');
+      const carried = Object.entries(d.inventory.counts).map(([id, n]) => `<li><span>${esc(d.content.itemsById[id].name)} × ${n}</span><span><button class="small" data-action="deposit" data-value="${id}:1">+1</button> <button class="small" data-action="deposit" data-value="${id}:10">+10</button> <button class="small" data-action="deposit" data-value="${id}:all">tout</button></span></li>`).join('');
+      body += `<p>Contenu : ${s.stored} / ${s.capacity}</p><div class="split"><div><h3>Entrepôt</h3><ul class="list">${stored || '<li class="muted">Vide</li>'}</ul></div><div><h3>Inventaire</h3><ul class="list">${carried || '<li class="muted">Vide</li>'}</ul></div></div>`;
+    }
+    if (s.typeId === 'garage') {
+      const rows = Object.entries(d.content.vehicles).filter(([, v]) => v.cost).map(([id, v]) => {
+        const cost = Object.entries(v.cost).map(([item, n]) => `<span style="color:${d.inventory.count(item) >= n ? 'inherit' : '#ff8a8a'}">${esc(d.content.itemsById[item].name)} ${d.inventory.count(item)}/${n}</span>`).join(' · ');
+        const ok = s.powered && Object.entries(v.cost).every(([item, n]) => d.inventory.count(item) >= n);
+        return `<li><span><b>${esc(v.name)}</b><br><small class="muted">${cost}</small></span><button class="small" data-action="build-vehicle" data-value="${id}" ${ok ? '' : 'disabled'}>Construire</button></li>`;
+      }).join('');
+      body += `<h3>Atelier de véhicules</h3><ul class="list">${rows}</ul>`;
+    }
+    return `${body}<div class="stack">${buttons.join('')}</div>`;
   }
 
   pauseHtml(d) {

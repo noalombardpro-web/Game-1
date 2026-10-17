@@ -22,7 +22,7 @@ const isNum = (v, min = -Infinity, max = Infinity) => typeof v === 'number' && N
 export function validateSave(data) {
   if (!data || typeof data !== 'object') throw new Error('save: not an object');
   if (data.version !== SAVE_VERSION) throw new Error(`save: unsupported version ${data.version}`);
-  const { player, robot, inventory, missions, codex, collected, rover, clock, seed, difficulty, checksum: sum, ...rest } = data;
+  const { player, robot, inventory, missions, codex, collected, rover, clock, seed, difficulty, checksum: sum, structures: _structures, vehicles: _vehicles, ...rest } = data;
   if (!isNum(seed, 0, 0xffffffff)) throw new Error('save: bad seed');
   if (!player || !isNum(player.x, -1e7, 1e7) || !isNum(player.z, -1e7, 1e7) || !isNum(player.yaw)) throw new Error('save: bad player');
   if (!robot || !isNum(robot.energy, 0, 100) || !isNum(robot.integrity, 0, 100)) throw new Error('save: bad robot');
@@ -50,7 +50,8 @@ export function validateSave(data) {
     robot: { energy: robot.energy, integrity: robot.integrity, temperature: isNum(robot.temperature, -100, 150) ? robot.temperature : 20, tool: isNum(robot.tool, 0, 100) ? robot.tool : 100 },
     inventory: { counts: inventory.counts, modules: inventory.modules ?? {} },
     missions: missionState,
-    codex: { species: codexState.species ?? [], points: codexState.points ?? [] },
+    codex: { species: codexState.species ?? [], points: codexState.points ?? [], visited: codexState.visited ?? [] },
+    structures: Array.isArray(data.structures) ? data.structures.slice(0, 400) : [],
     collected,
     vehicles: vehicleList,
     clock: { timeOfDay: clock.timeOfDay },
