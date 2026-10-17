@@ -40,6 +40,51 @@ export class UI {
     });
   }
 
+  setSpaceMode(on) {
+    $('hud').classList.toggle('space', on);
+    $('space-hud').classList.toggle('hidden', !on);
+  }
+
+  setCockpit(on) {
+    $('cockpit').classList.toggle('hidden', !on);
+  }
+
+  /** Brief full-screen flash used for atmosphere and planet transitions. */
+  flash(color = '#ffffff') {
+    const el = $('flash');
+    el.style.background = color;
+    el.style.transition = 'none';
+    el.style.opacity = '0.95';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transition = 'opacity 1.2s ease-out';
+      el.style.opacity = '0';
+    }));
+  }
+
+  updateSpace(dt, s) {
+    const h = s.space;
+    $('objective').textContent = s.objective;
+    $('sp-speed').textContent = `${Math.round(h.speed)} u/s`;
+    $('sp-mode').textContent = h.docked ? 'Amarré' : h.cruising ? 'CROISIÈRE' : `${Math.round(h.throttle * 100)} %`;
+    $('sp-throttle').style.width = `${h.throttle * 100}%`;
+    $('sp-energy').textContent = `${Math.round(h.energy)} %`;
+    $('sp-energy-bar').style.width = `${h.energy}%`;
+    $('sp-hull').textContent = `${Math.round(h.hull)} %`;
+    $('sp-hull-bar').style.width = `${h.hull}%`;
+    $('sp-hull').style.color = h.hull < 30 ? '#ff5d5d' : '';
+    $('sp-target').textContent = h.target.name;
+    const km = (d) => (d >= 1000 ? `${(d / 1000).toFixed(1)} ku` : `${Math.round(d)} u`);
+    $('sp-eta').textContent = `${km(h.target.distance)}${h.target.eta ? ` · ${Math.round(h.target.eta)} s` : ''}`;
+    $('sp-near').textContent = `${h.nearest} ${km(h.altitude)}`;
+    $('space-prompts').innerHTML = h.prompts.map((p) => `<div>${esc(p)}</div>`).join('');
+    $('nav-markers').innerHTML = h.markers.map((m) => `<span class="navm ${m.selected ? 'selected' : ''} ${m.onScreen ? '' : 'edge'}" style="left:${m.left.toFixed(1)}%;top:${m.top.toFixed(1)}%">${esc(m.name)} · ${km(m.distance)}</span>`).join('');
+    this.damageAlpha = Math.max(0, this.damageAlpha - dt * 1.2);
+    $('damage').style.opacity = this.damageAlpha.toFixed(3);
+    const perf = $('perf');
+    perf.classList.toggle('hidden', !s.perfVisible);
+    if (s.perfVisible && s.perf) perf.textContent = `${s.perf.fps.toFixed(0)} FPS · ${s.perf.avgMs.toFixed(1)} ms · CPU jeu ${s.perf.updateMs.toFixed(1)} ms`;
+  }
+
   showStart(hasSave) {
     $('start').classList.remove('hidden');
     $('hud').classList.add('hidden');
@@ -95,6 +140,10 @@ export class UI {
 
   /** Per-frame HUD refresh. `s` is the snapshot built by the game. */
   update(dt, s) {
+    if (s.space) {
+      this.updateSpace(dt, s);
+      return;
+    }
     $('bar-energy').style.width = `${s.energy.toFixed(1)}%`;
     $('bar-integrity').style.width = `${s.integrity.toFixed(1)}%`;
     $('val-energy').textContent = `${Math.round(s.energy)}`;
@@ -230,11 +279,12 @@ export class UI {
       settings: () => this.settingsHtml(d),
       pause: () => this.pauseHtml(d),
       build: () => this.buildHtml(d),
+      station: () => this.stationHtml(d),
       structure: () => this.structureHtml(d)
     };
     const titles = {
       inventory: 'Inventaire & fabrication', map: 'Carte', journal: 'Journal de mission', codex: 'Codex', settings: 'Paramètres', pause: 'Pause',
-      build: 'Construction', structure: d.structure ? d.structure.def.name : 'Structure'
+      build: 'Construction', station: 'Station Aurore', structure: d.structure ? d.structure.def.name : 'Structure'
     };
     const content = renderers[name]();
     root.innerHTML = `<div class="sheet"><header><h2>${titles[name]}</h2><button data-action="close" class="ghost">Fermer (Échap)</button></header>${content}</div>`;
@@ -396,6 +446,15 @@ export class UI {
     return `<p class="muted">Viser le sol, clic gauche pour poser, Z / X pour pivoter, Échap pour annuler. T démonte la structure la plus proche (60 % des ressources rendus).</p><ul class="list">${rows}</ul>`;
   }
 
+  stationHtml(d) {
+    return `<p class="muted">Station Aurore — amarrage sécurisé. Les services sont gratuits pour les membres de l'expédition.</p>
+      <div class="stack">
+        <button data-action="station-service">Réparer et recharger le vaisseau</button>
+        <button data-action="station-save">Sauvegarder${d.lastSave ? ` (${esc(d.lastSave)})` : ''}</button>
+        <button data-action="station-leave">Désamarrer et repartir</button>
+      </div>`;
+  }
+
   structureHtml(d) {
     const s = d.structure;
     if (!s) return '<p class="muted">Aucune structure à proximité.</p>';
@@ -415,6 +474,13 @@ export class UI {
       const stored = Object.entries(s.storage).map(([id, n]) => `<li><span>${esc(d.content.itemsById[id].name)} × ${n}</span><span><button class="small" data-action="withdraw" data-value="${id}:1">−1</button> <button class="small" data-action="withdraw" data-value="${id}:10">−10</button></span></li>`).join('');
       const carried = Object.entries(d.inventory.counts).map(([id, n]) => `<li><span>${esc(d.content.itemsById[id].name)} × ${n}</span><span><button class="small" data-action="deposit" data-value="${id}:1">+1</button> <button class="small" data-action="deposit" data-value="${id}:10">+10</button> <button class="small" data-action="deposit" data-value="${id}:all">tout</button></span></li>`).join('');
       body += `<p>Contenu : ${s.stored} / ${s.capacity}</p><div class="split"><div><h3>Entrepôt</h3><ul class="list">${stored || '<li class="muted">Vide</li>'}</ul></div><div><h3>Inventaire</h3><ul class="list">${carried || '<li class="muted">Vide</li>'}</ul></div></div>`;
+    }
+    if (s.typeId === 'pad') {
+      const cfg = d.content.vehicles.ship;
+      const cost = Object.entries(cfg.cost).map(([item, n]) => `<span style="color:${d.inventory.count(item) >= n ? 'inherit' : '#ff8a8a'}">${esc(d.content.itemsById[item].name)} ${d.inventory.count(item)}/${n}</span>`).join(' · ');
+      const ok = s.powered && !d.shipExists && Object.entries(cfg.cost).every(([item, n]) => d.inventory.count(item) >= n);
+      body += `<h3>Vaisseau d'exploration</h3><p class="muted">${esc(cfg.hint)}</p><p><small>${cost}</small></p>
+        <button data-action="build-ship" ${ok ? '' : 'disabled'}>${d.shipExists ? 'Un vaisseau existe déjà' : 'Construire le vaisseau'}</button>`;
     }
     if (s.typeId === 'garage') {
       const rows = Object.entries(d.content.vehicles).filter(([, v]) => v.cost).map(([id, v]) => {

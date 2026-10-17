@@ -154,3 +154,32 @@ function submarine() {
 }
 
 export const MODEL_BUILDERS = { rover, buggy, transport, drone, aircraft, submarine };
+
+function ship() {
+  const root = new THREE.Group();
+  const paint = mat('#e9edf2');
+  const accent = mat('#2f6fd8');
+  const dark = mat('#20242b', { metalness: 0.4, roughness: 0.6 });
+  const glass = mat('#0f2a3d', { metalness: 0.9, roughness: 0.05, transparent: true, opacity: 0.85 });
+  const glow = new THREE.MeshStandardMaterial({ color: '#7fe9ff', emissive: '#2fd8ff', emissiveIntensity: 3 });
+  const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(1.4, 6.5, 4, 12), paint);
+  fuselage.rotation.x = Math.PI / 2;
+  fuselage.position.y = 1.8;
+  fuselage.castShadow = true;
+  root.add(fuselage);
+  box(root, 1.6, 0.9, 2.6, glass, 0, 2.6, 2.2);
+  box(root, 10.5, 0.25, 3.2, accent, 0, 1.6, -1.2, [0, 0, 0]);
+  box(root, 3.4, 0.2, 1.6, paint, 0, 2.4, -4.2);
+  box(root, 0.2, 1.8, 1.6, accent, 0, 3.2, -4.2);
+  for (const x of [-1.1, 1.1]) {
+    cyl(root, 0.6, 0.8, 1.6, 10, dark, x, 1.8, -4.4, [Math.PI / 2, 0, 0]);
+    const flame = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.05, 1.8, 8), glow);
+    flame.position.set(x, 1.8, -5.8);
+    flame.rotation.x = Math.PI / 2;
+    root.add(flame);
+  }
+  for (const x of [-1.0, 1.0]) cyl(root, 0.06, 0.06, 1.3, 5, dark, x * 1.2, 0.7, 1.0);
+  return { root, ...lights(root, 3.2, 1.8) };
+}
+
+MODEL_BUILDERS.ship = ship;

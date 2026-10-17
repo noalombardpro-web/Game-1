@@ -1,22 +1,249 @@
 {
-  "spawn": { "x": 0, "z": 0 },
-  "points": [
+ "spawn": {
+  "x": 0,
+  "z": 0
+ },
+ "points": [
+  {
+   "id": "camp",
+   "name": "Camp de l'expédition Aurore",
+   "type": "camp",
+   "distance": [
+    260,
+    340
+   ],
+   "log": "Le camp de l'expédition Aurore est désert. Les tentes sont intactes ; le relais de signal fonctionne encore sur batterie."
+  },
+  {
+   "id": "ruins",
+   "name": "Ruines pré-humaines",
+   "type": "ruins",
+   "distance": [
+    420,
+    520
+   ],
+   "log": "Piliers gravés d'un alphabet inconnu. Les sentinelles automatiques y sont toujours actives."
+  },
+  {
+   "id": "wreck",
+   "name": "Épave de navette Halo",
+   "type": "wreck",
+   "distance": [
+    600,
+    700
+   ],
+   "log": "Coque de navette fracturée. Un conteneur scellé contient des composants électroniques."
+  },
+  {
+   "id": "facility",
+   "name": "Installation abandonnée",
+   "type": "facility",
+   "distance": [
+    900,
+    1700
+   ],
+   "biomes": [
+    "meadow",
+    "temperate_forest",
+    "conifer_forest",
+    "rocky_plateau",
+    "desert",
+    "jungle",
+    "tundra"
+   ],
+   "log": "Un complexe de maintenance de l'expédition, évacué en urgence. Les journaux d'accès mentionnent une anomalie détectée sous la surface."
+  },
+  {
+   "id": "lab",
+   "name": "Laboratoire isolé",
+   "type": "lab",
+   "distance": [
+    1300,
+    3000
+   ],
+   "biomes": [
+    "tundra",
+    "rocky_plateau",
+    "snow_peaks",
+    "polar_ice",
+    "canyon"
+   ],
+   "log": "Laboratoire de recherche isolé. Les échantillons étiquetés « souche X » ont été retirés des chambres froides avant l'évacuation."
+  },
+  {
+   "id": "crater_site",
+   "name": "Cratère géant",
+   "type": "crater_site",
+   "distance": [
+    500,
+    3800
+   ],
+   "biomes": [
+    "crater"
+   ],
+   "log": "Cuvette d'impact de plusieurs centaines de mètres. Des fragments d'un alliage inconnu parsèment le fond : le météore n'était pas naturel."
+  },
+  {
+   "id": "cavern",
+   "name": "Caverne cristalline",
+   "type": "cavern",
+   "distance": [
+    600,
+    3500
+   ],
+   "biomes": [
+    "rocky_plateau",
+    "snow_peaks",
+    "canyon",
+    "volcanic",
+    "crater"
+   ],
+   "log": "L'entrée d'une grande caverne. Les parois renvoient une lumière bleutée : des cristaux énergétiques affleurent partout."
+  },
+  {
+   "id": "reef_wreck",
+   "name": "Épave engloutie",
+   "type": "reef_wreck",
+   "distance": [
+    500,
+    3000
+   ],
+   "biomes": [
+    "coral_reef",
+    "kelp_forest"
+   ],
+   "underwater": true,
+   "log": "Une barge de recherche de l'expédition Aurore, coulée par une tempête. Ses caissons étanches renferment du matériel intact."
+  },
+  {
+   "id": "sunken_ruins",
+   "name": "Ruines submergées",
+   "type": "sunken_ruins",
+   "distance": [
+    700,
+    3500
+   ],
+   "biomes": [
+    "abyss",
+    "kelp_forest",
+    "coral_reef"
+   ],
+   "underwater": true,
+   "log": "Colonnes et glyphes lumineux gravés par la même civilisation que les ruines de la surface. Elles se prolongent vers les abysses."
+  }
+ ],
+ "enemies": [
+  {
+   "type": "ruin_turret",
+   "poi": "ruins",
+   "count": 2,
+   "offset": 14
+  },
+  {
+   "type": "sentinel_drone",
+   "poi": "ruins",
+   "count": 2,
+   "offset": 30
+  },
+  {
+   "type": "sentinel_drone",
+   "poi": "wreck",
+   "count": 2,
+   "offset": 24
+  },
+  {
+   "type": "ruin_turret",
+   "poi": "facility",
+   "count": 2,
+   "offset": 16
+  },
+  {
+   "type": "sentinel_drone",
+   "poi": "facility",
+   "count": 2,
+   "offset": 28
+  },
+  {
+   "type": "ruin_turret",
+   "poi": "lab",
+   "count": 1,
+   "offset": 14
+  },
+  {
+   "type": "sentinel_drone",
+   "poi": "crater_site",
+   "count": 1,
+   "offset": 40
+  }
+ ],
+ "planets": {
+  "cryos": {
+   "name": "Cryos",
+   "climateShift": -34,
+   "spawn": {
+    "x": 0,
+    "z": 0
+   },
+   "points": [
     {
-      "id": "camp", "name": "Camp de l'expédition Aurore", "type": "camp", "distance": [260, 340],
-      "log": "Le camp de l'expédition Aurore est désert. Les tentes sont intactes ; le relais de signal fonctionne encore sur batterie."
+     "id": "cryo_lab",
+     "name": "Station de recherche Cryos",
+     "type": "lab",
+     "distance": [
+      300,
+      500
+     ],
+     "log": "Une base scientifique ensevelie sous la glace. Le dernier message évoque un signal reçu depuis l'espace, relayé vers la structure en orbite."
     },
     {
-      "id": "ruins", "name": "Ruines pré-humaines", "type": "ruins", "distance": [420, 520],
-      "log": "Piliers gravés d'un alphabet inconnu. Les sentinelles automatiques y sont toujours actives."
+     "id": "cryo_facility",
+     "name": "Avant-poste gelé",
+     "type": "facility",
+     "distance": [
+      700,
+      1400
+     ],
+     "log": "Un avant-poste de l'expédition Aurore. L'équipe a pris ses quartiers ici avant de disparaître."
     },
     {
-      "id": "wreck", "name": "Épave de navette Halo", "type": "wreck", "distance": [600, 700],
-      "log": "Coque de navette fracturée. Un conteneur scellé contient des composants électroniques."
+     "id": "cryo_cavern",
+     "name": "Caverne de givre",
+     "type": "cavern",
+     "distance": [
+      500,
+      1800
+     ],
+     "biomes": [
+      "polar_ice",
+      "tundra",
+      "snow_peaks",
+      "rocky_plateau",
+      "crater",
+      "canyon"
+     ],
+     "log": "Une cavité aux parois de glace pure, traversée de veines cristallines."
     }
-  ],
-  "enemies": [
-    { "type": "ruin_turret", "poi": "ruins", "count": 2, "offset": 14 },
-    { "type": "sentinel_drone", "poi": "ruins", "count": 2, "offset": 30 },
-    { "type": "sentinel_drone", "poi": "wreck", "count": 2, "offset": 24 }
-  ]
+   ],
+   "enemies": [
+    {
+     "type": "ruin_turret",
+     "poi": "cryo_facility",
+     "count": 2,
+     "offset": 16
+    },
+    {
+     "type": "sentinel_drone",
+     "poi": "cryo_facility",
+     "count": 2,
+     "offset": 26
+    },
+    {
+     "type": "sentinel_drone",
+     "poi": "cryo_lab",
+     "count": 1,
+     "offset": 22
+    }
+   ]
+  }
+ }
 }

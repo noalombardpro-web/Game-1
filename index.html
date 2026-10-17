@@ -76,6 +76,27 @@
     @keyframes fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
     #vehicle-hud { position: absolute; right: 14px; bottom: 170px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 0.85em; display: flex; flex-direction: column; gap: 3px; }
     #perf { position: absolute; right: 14px; top: 14px; background: rgba(0,0,0,0.6); padding: 6px 8px; border-radius: 6px; font: 11px/1.4 ui-monospace, monospace; white-space: pre; color: #bff; }
+    #hud.space #status, #hud.space #compass, #hud.space #radar, #hud.space #cross, #hud.space #vehicle-hud, #hud.space #prompt, #hud.space #scan-progress { display: none; }
+    #space-hud { position: absolute; inset: 0; }
+    #space-reticle { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); border: 1px solid rgba(127,233,255,0.7); border-radius: 50%; }
+    #space-reticle::after { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; background: var(--accent); border-radius: 50%; }
+    #space-panel { position: absolute; left: 14px; bottom: 14px; width: min(300px, 70vw); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.85em; }
+    #space-panel .row { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; color: var(--muted); }
+    #space-panel .row b { color: var(--ink); }
+    #space-panel .bar2 { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; margin: 3px 0 6px; }
+    #space-panel .bar2 > div { height: 100%; background: linear-gradient(90deg, #2fd4ff, #7fe9ff); }
+    #space-prompts { position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    #space-prompts div { background: var(--panel); border: 1px solid var(--line); padding: 6px 14px; border-radius: 6px; }
+    .navm { position: absolute; transform: translate(-50%, -50%); font-size: 11px; color: var(--accent); white-space: nowrap; text-shadow: 0 0 4px #000; pointer-events: none; }
+    .navm.selected { color: var(--warn); font-weight: 600; }
+    .navm.edge::before { content: "◂ "; }
+    #cockpit { position: fixed; inset: 0; z-index: 4; pointer-events: none; background:
+      linear-gradient(to bottom, rgba(0,0,0,0.85) 0, rgba(0,0,0,0) 9%),
+      linear-gradient(to top, rgba(8,12,18,0.96) 0, rgba(8,12,18,0.7) 12%, rgba(0,0,0,0) 22%),
+      linear-gradient(to right, rgba(0,0,0,0.75) 0, rgba(0,0,0,0) 7%),
+      linear-gradient(to left, rgba(0,0,0,0.75) 0, rgba(0,0,0,0) 7%); box-shadow: inset 0 0 160px 30px rgba(0,0,0,0.6); }
+    #cockpit::before { content: ""; position: absolute; left: 6%; right: 6%; bottom: 3%; height: 6px; background: linear-gradient(90deg, transparent, rgba(127,233,255,0.6), transparent); }
+    #flash { position: fixed; inset: 0; z-index: 40; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.9s ease-out; }
     #damage { position: absolute; inset: 0; box-shadow: inset 0 0 120px 40px rgba(255, 40, 40, 0.9); opacity: 0; transition: opacity 0.1s; }
 
     /* Panels */
@@ -153,7 +174,26 @@
     <div id="toasts"></div>
     <div id="perf" class="hidden"></div>
     <div id="damage"></div>
+    <div id="space-hud" class="hidden">
+      <div id="nav-markers"></div>
+      <div id="space-reticle"></div>
+      <div id="space-prompts"></div>
+      <div id="space-panel">
+        <div class="row"><span>Vitesse</span><b id="sp-speed">0</b></div>
+        <div class="row"><span>Poussée</span><b id="sp-mode">—</b></div>
+        <div class="bar2"><div id="sp-throttle" style="width:0%"></div></div>
+        <div class="row"><span>Énergie</span><b id="sp-energy">100 %</b></div>
+        <div class="bar2"><div id="sp-energy-bar" style="width:100%"></div></div>
+        <div class="row"><span>Coque</span><b id="sp-hull">100 %</b></div>
+        <div class="bar2"><div id="sp-hull-bar" style="width:100%"></div></div>
+        <div class="row"><span>Cible (N)</span><b id="sp-target">—</b></div>
+        <div class="row"><span>Distance / ETA</span><b id="sp-eta">—</b></div>
+        <div class="row"><span>Astre proche</span><b id="sp-near">—</b></div>
+      </div>
+    </div>
   </div>
+  <div id="cockpit" class="hidden"></div>
+  <div id="flash"></div>
 
   <div id="panel" class="hidden"></div>
   <div id="error" class="hidden"></div>

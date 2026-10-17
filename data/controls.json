@@ -74,6 +74,12 @@
   ],
   "dismantle": [
    "KeyT"
+  ],
+  "nav": [
+   "KeyN"
+  ],
+  "land": [
+   "KeyL"
   ]
  },
  "labels": {
@@ -99,6 +105,8 @@
   "build": "Construction",
   "rotate_left": "Pivoter à gauche (construction)",
   "rotate_right": "Pivoter à droite (construction)",
-  "dismantle": "Démonter une structure proche"
+  "dismantle": "Démonter une structure proche",
+  "nav": "Cible suivante (navigation spatiale)",
+  "land": "Atterrir / amarrer / décoller de la station"
  }
 }

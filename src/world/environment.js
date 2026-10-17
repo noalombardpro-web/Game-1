@@ -29,6 +29,8 @@ export class Environment {
     this.flash = 0;
     this.cloudCover = 0.2;
     this.waterDepth = 0;
+    /** Altitude of the viewer above the ground (m): the sky darkens towards space above ~500 m. */
+    this.altitude = 0;
 
     this.sky = new Sky();
     this.sky.scale.setScalar(SKY_RADIUS);
@@ -172,6 +174,15 @@ export class Environment {
     fog.density = weather.current.fog * (storm ? 1.1 : 1);
     this.renderer.setClearColor(fog.color, 1);
 
+    // High altitude: thinner air, darker sky, visible stars.
+    const high = clamp((this.altitude - 500) / 900, 0, 1);
+    if (high > 0) {
+      this.skyUniforms.rayleigh.value *= 1 - 0.85 * high;
+      this.skyUniforms.mieCoefficient.value *= 1 - 0.8 * high;
+      this.hemi.intensity *= 1 - 0.5 * high;
+      fog.density *= 1 - high;
+      this.stars.material.opacity = Math.max(this.stars.material.opacity, high);
+    }
     // Underwater: light and colour are absorbed with depth, the sky disappears.
     const depth = this.waterDepth;
     const under = depth > 0;

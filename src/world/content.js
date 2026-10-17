@@ -36,6 +36,7 @@ export function loadContent() {
     world: worldData,
     enemies: enemiesData,
     missions: missionsData.missions,
+    sideMissions: missionsData.sideMissions ?? [],
     controls: controlsData,
     vehicles: vehiclesData.vehicles,
     structures: structuresData

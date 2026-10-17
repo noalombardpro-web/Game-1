@@ -16,6 +16,7 @@ import { CreatureManager } from '../entities/creatures.js';
 import { EnemyManager } from '../entities/enemies.js';
 import { VehicleManager } from '../vehicles/vehicle.js';
 import { BaseManager, canPlace } from '../bases/bases.js';
+import { SpaceSession } from '../space/spaceSession.js';
 import { Effects, Bubbles } from '../entities/effects.js';
 import { Inventory } from '../systems/inventory.js';
 import { Missions } from '../systems/missions.js';
@@ -191,30 +192,80 @@ export class Game {
     }
     const seed = data ? data.seed : options.seed ? seedFromString(options.seed) : Math.floor(Math.random() * 0xffffffff) >>> 0;
     const difficulty = data?.difficulty ?? options.difficulty ?? this.settings.difficulty;
-    this.buildWorld(seed, difficulty, data);
+    this.leaveSpaceSilently();
+    this.homeSeed = seed >>> 0;
+    this.seed = this.homeSeed;
+    this.difficulty = difficulty;
+    this.difficultyTable = this.content.enemies.difficulty[difficulty] ?? this.content.enemies.difficulty.normal;
+    this.planetStates = data?.planets ?? {};
+    this.spaceMemory = data?.space ?? null;
+    this.buildGlobals(data);
+    this.buildWorld(data?.planet ?? 'genesis', data);
+    this.missions.skipMissing(this.knownPointIds());
     this.state = 'playing';
     this.ui.showGame();
     this.audio.ensure();
     this.lastSaveText = data?.savedAt ? new Date(data.savedAt).toLocaleTimeString('fr-FR') : null;
+    if (data?.inSpace && data.space) this.enterSpace(null, data.space);
     this.capturePointer();
     if (data) this.ui.toast('Partie chargée.', 'good');
     else this.ui.toast('Bienvenue sur PROJECT GENESIS. Votre expédition a perdu le contact : cherchez le signal au nord-est.', 'info');
   }
 
-  buildWorld(seed, difficulty, data) {
+  /** State shared by every planet: robot, inventory, missions, codex, camera. */
+  buildGlobals(data) {
+    this.robot = new RobotState(data?.robot);
+    this.inventory = new Inventory(this.content, data?.inventory);
+    this.missions = new Missions(this.content, data?.missions);
+    this.codex = { species: new Set(data?.codex?.species ?? []), points: new Set(data?.codex?.points ?? []), visited: new Set(data?.codex?.visited ?? []) };
+    this.rig = new CameraRig(this.camera, this.settings);
+    this.rig.yaw = data?.player?.yaw ?? 0;
+    this.buildMode = null;
+    this.selectedStructure = null;
+    this.logEntries = [];
+    this.dynamicPoints = [];
+    this.eventTimer = 120 + Math.random() * 120;
+  }
+
+  planetSeed(planetId) {
+    return planetId === 'genesis' ? this.homeSeed : (this.homeSeed ^ 0xc12705) >>> 0;
+  }
+
+  /** Surface definition of a planet: spawn, places of interest and enemy placements. */
+  planetDef(planetId) {
+    const w = this.content.world;
+    if (planetId === 'genesis') return { name: 'Genesis', spawn: w.spawn, points: w.points, enemies: w.enemies, climateShift: 0 };
+    return w.planets[planetId];
+  }
+
+  /** Ids of every place the missions may refer to (current planet plus the other planets' definitions). */
+  knownPointIds() {
+    const ids = new Set(this.points.map((p) => p.id));
+    for (const def of Object.values(this.content.world.planets)) for (const p of def.points) ids.add(p.id);
+    for (const id of ['anomaly', 'persephone']) ids.add(id);
+    return ids;
+  }
+
+  /**
+   * Builds the surface of a planet. `s` is the saved surface state of that planet, or null for a
+   * fresh arrival: { player, checkpoint, vehicles, structures, collected }.
+   */
+  buildWorld(planetId, s) {
     this.world?.dispose();
     if (this.scene) disposeScene(this.scene);
     this.scene = new THREE.Scene();
     this.scene.environment = this.envMap;
     this.scene.environmentIntensity = 0.45;
-    this.seed = seed >>> 0;
-    this.difficulty = difficulty;
-    this.difficultyTable = this.content.enemies.difficulty[difficulty] ?? this.content.enemies.difficulty.normal;
+    this.planetId = planetId;
+    const def = this.planetDef(planetId);
+    const seed = this.planetSeed(planetId);
     const q = QUALITY_PRESETS[this.settings.quality];
     this.quality = q;
-    this.terrain = createTerrain(this.seed, this.content.biomeRules);
+    const keepTime = this.environment?.timeOfDay;
+    this.terrain = createTerrain(seed, this.content.biomeRules, { climateShift: def.climateShift ?? 0 });
     this.environment = new Environment(this.scene, this.renderer, { shadowMap: q.shadowMap });
-    this.weather = new Weather(this.seed, this.content.biomesById);
+    if (keepTime !== undefined) this.environment.setTime(keepTime);
+    this.weather = new Weather(seed, this.content.biomesById);
     this.weatherFx = new WeatherParticles(this.scene);
     this.effects = new Effects(this.scene);
     this.bubbles = new Bubbles(this.scene);
@@ -222,13 +273,13 @@ export class Game {
 
     this.world = new World({
       scene: this.scene,
-      seed: this.seed,
+      seed,
       terrain: this.terrain,
       content: this.content,
       assets: this.assets,
       terrainMaterial: this.terrainMaterial,
       quality: { viewRadius: q.viewRadius, vegDensity: q.vegDensity },
-      collected: new Set(data?.collected ?? []),
+      collected: new Set(s?.collected ?? []),
       onChunkReady: (chunk) => this.creatures.onChunkReady(chunk),
       onChunkRemoved: (chunk) => this.creatures.onChunkRemoved(chunk)
     });
@@ -238,43 +289,34 @@ export class Game {
       foodAt: (x, z) => this.foodAt(x, z)
     });
 
-    this.robot = new RobotState(data?.robot);
     this.player = new Player(this.scene, this.world, this.robot);
-    const spawn = data?.player ?? { ...this.content.world.spawn, yaw: 0 };
-    this.player.yaw = spawn.yaw;
+    const spawn = s?.player ?? { ...def.spawn, yaw: 0 };
+    this.player.yaw = spawn.yaw ?? 0;
     this.player.spawnAt(spawn.x, spawn.z);
-    this.checkpoint = data?.checkpoint ?? { x: spawn.x, z: spawn.z };
+    this.checkpoint = s?.checkpoint ?? { x: spawn.x, z: spawn.z };
 
-    this.rig = new CameraRig(this.camera, this.settings);
-    this.rig.yaw = spawn.yaw;
-    this.inventory = new Inventory(this.content, data?.inventory);
-    this.missions = new Missions(this.content, data?.missions);
-    this.codex = { species: new Set(data?.codex?.species ?? []), points: new Set(data?.codex?.points ?? []), visited: new Set(data?.codex?.visited ?? []) };
-    this.buildMode = null;
-    this.selectedStructure = null;
-
-    this.points = placePoints(this.terrain, this.content.world, this.seed);
+    this.points = placePoints(this.terrain, { spawn: def.spawn, points: def.points }, seed, this.content.biomes.map((b) => b.id));
     this.pointVisuals = new Map();
     this.enemies = new EnemyManager({
       scene: this.scene, content: this.content, world: this.world, difficulty: this.difficultyTable,
-      damagePlayer: (amount) => this.damagePlayer(amount), effects: this.effects, seed: this.seed
+      damagePlayer: (amount) => this.damagePlayer(amount), effects: this.effects, seed
     });
     for (const poi of this.points) {
-      for (const spec of this.content.world.enemies) {
+      for (const spec of def.enemies) {
         if (spec.poi === poi.id) this.enemies.spawnForPoint(poi, spec);
       }
     }
 
     this.vehicles = new VehicleManager(this.scene, this.world, this.content.vehicles);
     this.mounted = null;
-    if (data?.vehicles?.length) this.vehicles.restore(data.vehicles);
-    else this.vehicles.add('rover', spawn.x + 5, spawn.z + 4, 0);
+    if (s?.vehicles) this.vehicles.restore(s.vehicles);
+    else if (planetId === 'genesis') this.vehicles.add('rover', spawn.x + 5, spawn.z + 4, 0);
     this.bases = new BaseManager({ scene: this.scene, world: this.world, data: this.content.structures });
-    this.bases.restore(data?.structures);
-    this.logEntries = [];
+    this.bases.restore(s?.structures);
     this.world.update(this.player.pos.x, this.player.pos.z, 8);
     this.autosaveTimer = AUTOSAVE_SECONDS;
-    if (data?.clock) this.environment.setTime(data.clock.timeOfDay);
+    if (s?.clock) this.environment.setTime(s.clock.timeOfDay);
+    this.interior = null;
   }
 
   capturePointer() {
@@ -302,7 +344,17 @@ export class Game {
       return;
     }
     this.handleMenuKeys();
-    if (this.state === 'playing') {
+    if (this.state === 'playing' && this.space) {
+      const t0 = performance.now();
+      const steps = Math.max(1, Math.ceil(dt / SIM_STEP));
+      for (let i = 0; i < steps; i++) {
+        this.simulateSpace(dt / steps, i === 0);
+        if (i === 0) this.input.endFrame();
+        if (!this.space) break;
+      }
+      if (this.space) this.ui.update(dt, this.hudState());
+      this.profiler.recordUpdate(performance.now() - t0);
+    } else if (this.state === 'playing') {
       // Fixed-rate substeps keep game time close to wall time when frames are slow.
       // Key edges belong to the first substep only, so one press is never applied twice.
       const t0 = performance.now();
@@ -316,7 +368,7 @@ export class Game {
       this.profiler.recordUpdate(performance.now() - t0);
     }
     const t1 = performance.now();
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.space ? this.space.scene : this.scene, this.camera);
     this.profiler.recordRender(performance.now() - t1);
     this.input.endFrame();
   }
@@ -378,6 +430,7 @@ export class Game {
       structureDefs: this.content.structures,
       structure: this.selectedStructure,
       station: this.bases ? this.bases.bestStation(this.player.pos.x, this.player.pos.z) : 'hand',
+      shipExists: this.shipExists ? this.shipExists() : false,
       settings: this.settings,
       bindings: this.bindings,
       hasSave: this.saves.hasSave,
@@ -445,6 +498,7 @@ export class Game {
     if (this.robot.energy <= 0) this.robot.damage(0.3 * dt);
     if (this.robot.destroyed) this.onRobotDestroyed();
 
+    if (player.swimming) this.handleNotices(this.missions.notify({ type: 'dive', depth: player.depthBelowSurface }));
     this.weather.update(dt, biome.id);
     for (const event of this.weather.takeEvents()) {
       if (event.type === 'thunder') {
@@ -456,6 +510,7 @@ export class Game {
     }
     const cameraDepth = Math.max(0, WATER_LEVEL - this.rig.camera.position.y);
     this.environment.waterDepth = cameraDepth;
+    this.environment.altitude = mounted ? mounted.altitude : 0;
     this.environment.update(dt, player.pos, this.weather, true);
     if (cameraDepth > 0) this.weatherFx.hide();
     else this.weatherFx.update(dt, this.rig.camera.position, this.weather);
@@ -489,9 +544,11 @@ export class Game {
     });
 
     const target = mounted
-      ? { x: mounted.x, y: mounted.y, z: mounted.z, height: mounted.cfg.camera.height, distance: mounted.cfg.camera.distance, forceThird: mounted.typeId !== 'drone' }
+      ? { x: mounted.x, y: mounted.y, z: mounted.z, height: mounted.cfg.camera.height, distance: mounted.cfg.camera.distance, forceThird: !mounted.cfg.fpv }
       : { x: player.pos.x, y: player.pos.y, z: player.pos.z, height: player.crouched ? 1.0 : 1.5 };
     this.rig.update(dt, target, (x, z) => this.world.heightAt(x, z));
+    this.ui.setCockpit(!!mounted?.cfg.cockpit && this.rig.mode === 'first');
+    if (mounted?.typeId === 'ship' && mounted.altitude > 1400) this.launchToSpace(mounted);
 
     if (this.autosaveTimer <= 0) this.save(true);
   }
@@ -593,6 +650,8 @@ export class Game {
     }
     this.mounted = vehicle;
     vehicle.seated = true;
+    if (vehicle.cfg.fpv || vehicle.cfg.cockpit) this.rig.mode = 'first';
+    this.handleNotices(this.missions.notify({ type: 'drive', vehicle: vehicle.typeId, kind: vehicle.kind }));
     this.rig.yaw = vehicle.yaw;
     this.ui.toast(`${vehicle.name} — ${vehicle.cfg.hint}`, 'info');
     this.audio.playChime();
@@ -652,10 +711,12 @@ export class Game {
     if (hit.kind === 'creature') {
       const c = hit.obj;
       if (c.takeDamage(WEAPON.creature * this.robot.toolEfficiency, this.playerTarget)) {
+        this.handleNotices(this.missions.notify({ type: 'kill', species: c.species.id }));
         this.grant('bio_sample', 1 + this.inventory.effects.lootBonus);
         this.ui.toast(`${c.species.name} neutralisé : matériau biologique récupéré.`, 'good');
       }
     } else if (this.enemies.hit(hit.obj, WEAPON.enemy * this.robot.toolEfficiency)) {
+      this.handleNotices(this.missions.notify({ type: 'destroy', kind: hit.obj.kind }));
       this.ui.toast(`${hit.obj.name} détruit.`, 'good');
       this.grant('ore_metal', 1);
     }
@@ -699,7 +760,10 @@ export class Game {
     const p = this.player.pos;
     const result = this.inventory.craft(recipe, this.bases.bestStation(p.x, p.z));
     this.ui.toast(result.message, result.ok ? 'good' : 'warn');
-    if (result.ok) this.audio.playChime();
+    if (result.ok) {
+      this.audio.playChime();
+      this.handleNotices(this.missions.notify({ type: 'craft', recipe: recipeId }));
+    }
     this.refreshPanel();
   }
 
@@ -854,6 +918,12 @@ export class Game {
       || (this.bases?.hasComm && p && dist2d(p.x, p.z, poi.x, poi.z) < 2000));
   }
 
+  objectiveLine() {
+    if (this.missions.finished) return 'Missions principales terminées — exploration libre';
+    const step = this.missions.step;
+    return `${this.missions.mission.title} — ${step?.text ?? ''}`;
+  }
+
   objectiveTarget() {
     const step = this.missions?.step;
     if (!step || !step.poi) return null;
@@ -886,6 +956,7 @@ export class Game {
   }
 
   hudState() {
+    if (this.space) return { space: this.spaceHudState(), perfVisible: !!this.perfVisible, perf: this.perfVisible ? this.profiler.snapshot() : null, objective: this.objectiveLine(), chunks: 0, creatures: 0, views: 0, enemies: 0 };
     const p = this.player.pos;
     const biome = this.biomeAt(p.x, p.z);
     const step = this.missions.step;
@@ -964,9 +1035,13 @@ export class Game {
 
   snapshot() {
     return {
-      seed: this.seed,
+      seed: this.homeSeed,
       difficulty: this.difficulty,
       player: { x: this.player.pos.x, z: this.player.pos.z, yaw: this.player.yaw },
+      planet: this.planetId,
+      planets: this.planetStates,
+      space: this.space ? this.space.toJSON() : this.spaceMemory,
+      inSpace: !!this.space,
       checkpoint: this.checkpoint,
       robot: this.robot.toJSON(),
       inventory: this.inventory.toJSON(),
@@ -995,6 +1070,232 @@ export class Game {
   }
 
   // ---- Menus and settings ------------------------------------------------
+
+  // ---- Space and planets -------------------------------------------------
+
+  planetSnapshot() {
+    return {
+      player: { x: this.player.pos.x, z: this.player.pos.z, yaw: this.player.yaw },
+      checkpoint: this.checkpoint,
+      vehicles: this.vehicles.toJSON(),
+      structures: this.bases.toJSON(),
+      collected: [...this.world.collected]
+    };
+  }
+
+  /** Discards the space session (used when starting another game). */
+  leaveSpaceSilently() {
+    if (this.space) {
+      this.space.dispose();
+      this.space = null;
+    }
+    this.camera.near = 0.15;
+    this.camera.far = 3000;
+    this.camera.updateProjectionMatrix();
+    this.ui.setSpaceMode(false);
+    this.ui.setCockpit(false);
+  }
+
+  /** True when a ship exists somewhere (landed on a planet, or flying). */
+  shipExists() {
+    if (this.space || this.vehicles.list.some((v) => v.typeId === 'ship')) return true;
+    return Object.values(this.planetStates).some((p) => p.vehicles?.some((v) => v.type === 'ship'));
+  }
+
+  /** Enters the space layer: from a ship leaving the atmosphere, or when restoring a save. */
+  enterSpace(ship, savedSpace = null) {
+    this.space = new SpaceSession({ shipConfig: this.content.vehicles.ship, seed: this.homeSeed, state: savedSpace ?? this.spaceMemory });
+    if (!savedSpace && ship) this.space.enterOrbit(this.planetId, ship.energy, ship.hull);
+    this.spaceEffects = new Effects(this.space.scene);
+    this.camera.near = 1;
+    this.camera.far = 900000;
+    this.camera.updateProjectionMatrix();
+    this.ui.setSpaceMode(true);
+    this.ui.flash();
+    this.rig.mode = 'first';
+    this.audio.setUnderwater(0);
+  }
+
+  launchToSpace(vehicle) {
+    const ship = { energy: vehicle.energy, hull: vehicle.hull };
+    this.launchPoint = { x: vehicle.x, z: vehicle.z };
+    this.vehicles.list = this.vehicles.list.filter((v) => v !== vehicle);
+    vehicle.dispose();
+    this.mounted = null;
+    this.enterSpace(ship);
+    this.ui.toast('Le vaisseau quitte l\'atmosphère : orbite de ' + this.planetDef(this.planetId).name + '. W/S vitesse, Maj poussée, Espace propulsion de croisière, N cible suivante.', 'info');
+    this.audio.playChime();
+  }
+
+  /** Lands the ship on a planet (the same one, or another: its surface is generated or restored). */
+  landOn(planetId) {
+    const ship = { energy: this.space.ship.energy, hull: this.space.ship.hull };
+    this.spaceMemory = this.space.toJSON();
+    this.leaveSpaceSilently();
+    this.ui.flash();
+    if (planetId !== this.planetId) {
+      this.planetStates[this.planetId] = this.planetSnapshot();
+      const target = this.planetStates[planetId] ?? null;
+      delete this.planetStates[planetId];
+      this.buildWorld(planetId, target);
+      this.missions.skipMissing(this.knownPointIds());
+    }
+    const pad = this.bases.list.find((s) => s.typeId === 'pad');
+    const base = pad ?? (planetId === this.planetId && this.launchPoint ? this.launchPoint : this.player.pos);
+    const v = this.vehicles.add('ship', base.x, base.z, 0, ship);
+    this.player.spawnAt(base.x + v.cfg.radius + 3.5, base.z);
+    this.ui.toast(`Atterrissage sur ${this.planetDef(planetId).name}. Le vaisseau vous attend (E pour y remonter).`, 'good');
+    this.handleNotices(this.missions.notify({ type: 'land', planet: planetId }));
+    this.audio.playChime();
+  }
+
+  spaceControls(dt) {
+    const look = this.input.consumeLook();
+    const sens = this.settings.sensitivity * 0.0006;
+    const invert = this.settings.invertY ? -1 : 1;
+    const key = (a) => (this.input.isDown(a) ? 1 : 0);
+    const yawKeys = key('move_left') - key('move_right');
+    return {
+      throttle: key('move_forward') - key('move_back'),
+      yaw: clamp(yawKeys - (look.dx * sens) / (1.1 * dt), -2.5, 2.5),
+      pitch: clamp((-look.dy * sens * invert) / (1.3 * dt), -2.5, 2.5),
+      roll: key('rotate_left') - key('rotate_right'),
+      boost: this.input.isDown('sprint'),
+      cruise: this.input.isDown('jump'),
+      stop: this.input.isDown('crouch'),
+      fire: this.input.isDown('fire'),
+      scan: this.input.pressed('scan'),
+      nav: this.input.pressed('nav'),
+      land: this.input.pressed('land'),
+      interact: this.input.pressed('interact')
+    };
+  }
+
+  simulateSpace(dt) {
+    const space = this.space;
+    const events = space.update(dt, this.spaceControls(dt));
+    for (const e of events) {
+      if (!this.space) break;
+      this.onSpaceEvent(e);
+    }
+    if (!this.space) return;
+    const pose = space.cameraPose(this.rig.mode === 'first');
+    this.camera.position.copy(pose.position);
+    this.camera.quaternion.copy(pose.quaternion);
+    this.spaceEffects.update(dt);
+    this.ui.setCockpit(this.rig.mode === 'first');
+    if (this.input.pressed('camera')) this.rig.toggleMode();
+    this.audio.update(dt, { wind: 0, rain: 0, engine: 0.25 + space.ship.throttle * 0.75, tension: 0, alarm: space.ship.hull < 30 });
+    this.autosaveTimer -= dt;
+    if (this.autosaveTimer <= 0) this.save(true);
+    if (space.ship.hull <= 0) this.onShipDestroyed();
+  }
+
+  onShipDestroyed() {
+    const planet = this.planetId;
+    this.spaceMemory = this.space.toJSON();
+    this.leaveSpaceSilently();
+    this.ui.flash('#ff3030');
+    this.robot.integrity = Math.max(40, this.robot.integrity);
+    this.player.spawnAt(this.checkpoint.x, this.checkpoint.z);
+    this.ui.toast(`Le vaisseau est détruit. Vous êtes réactivé au dernier point sûr de ${this.planetDef(planet).name}. Reconstruisez un vaisseau sur la plateforme.`, 'danger');
+  }
+
+  onSpaceEvent(e) {
+    const space = this.space;
+    switch (e.type) {
+      case 'laser':
+        this.spaceEffects.beam(e.from, e.to, '#ff6b4d', 0.12);
+        this.audio.playShot();
+        break;
+      case 'burst':
+        this.spaceEffects.burst(e.pos, '#ffd166', 18, 0.35);
+        break;
+      case 'cargo': {
+        const got = this.grant(e.item, e.count);
+        if (got > 0) this.handleNotices(this.missions.notify({ type: 'collect', item: e.item, amount: got }));
+        break;
+      }
+      case 'damage':
+        this.ui.flashDamage(e.amount * 2);
+        this.audio.playHit();
+        break;
+      case 'orbit':
+        this.ui.toast('Orbite atteinte.', 'good');
+        this.handleNotices(this.missions.notify({ type: 'orbit' }));
+        break;
+      case 'dock':
+        this.handleNotices(this.missions.notify({ type: 'dock' }));
+        this.openPanel('station');
+        break;
+      case 'undock':
+        this.ui.toast('Désamarrage.', 'info');
+        break;
+      case 'land':
+        this.landOn(e.planet);
+        break;
+      case 'salvage':
+        for (const [id, n] of e.loot) this.grant(id, n);
+        this.ui.toast('Épave fouillée.', 'good');
+        this.audio.playChime();
+        this.handleNotices(this.missions.notify({ type: 'loot', poi: 'persephone' }));
+        break;
+      case 'scan':
+        this.describeSpaceScan(e);
+        break;
+      default:
+        break;
+    }
+    return space;
+  }
+
+  describeSpaceScan(e) {
+    if (!e.target) {
+      this.ui.toast('Aucune cible dans le viseur : alignez un astre ou une structure.', 'info');
+      return;
+    }
+    const t = e.target;
+    this.ui.showScan({ title: t.name, body: t.description, stats: [['Distance', `${Math.round(e.distance)} u`], ['Type', t.kind]] });
+    this.addLog(`${t.name} : ${t.description}`);
+    if (t.id === 'anomaly') {
+      this.codex.points.add('anomaly');
+      this.handleNotices(this.missions.notify({ type: 'scan', poi: 'anomaly' }));
+    }
+  }
+
+  /** HUD data for the space layer, including projected navigation markers. */
+  spaceHudState() {
+    const space = this.space;
+    const ship = space.ship;
+    const target = space.selectedBody;
+    const dist = Math.max(0, ship.pos.distanceTo(target.pos) - (target.kind === 'field' ? 0 : target.radius));
+    const speed = space.speed;
+    const eta = speed > 5 ? dist / speed : null;
+    const markers = space.bodies.map((b) => {
+      const v = b.pos.clone().project(this.camera);
+      const behind = v.z > 1;
+      const x = behind ? -v.x : v.x;
+      const y = behind ? -v.y : v.y;
+      const onScreen = !behind && Math.abs(x) < 0.96 && Math.abs(y) < 0.94;
+      const k = onScreen ? 1 : 1 / Math.max(Math.abs(x) / 0.94, Math.abs(y) / 0.9, 1e-3);
+      return {
+        name: b.name, distance: Math.max(0, ship.pos.distanceTo(b.pos) - b.radius), selected: b === target, onScreen,
+        left: 50 + x * k * 50, top: 50 - y * k * 50
+      };
+    });
+    const prompts = [];
+    if (space.docked) prompts.push('[L] Désamarrer');
+    else if (space.dockAvailable()) prompts.push('[L] Amarrer à la station');
+    const landing = space.landingCandidate();
+    if (landing) prompts.push(`[L] Atterrir sur ${landing.name}`);
+    if (space.wreckAvailable()) prompts.push('[E] Fouiller l\'épave');
+    return {
+      speed, throttle: ship.throttle, energy: (ship.energy / space.cfg.energy) * 100, hull: (ship.hull / space.cfg.hull) * 100,
+      cruising: space.cruising, docked: space.docked, target: { name: target.name, distance: dist, eta },
+      markers, prompts,
+      altitude: space.nearestBody().distance, nearest: space.nearestBody().body?.name ?? ''
+    };
+  }
 
   // ---- Bases and building -----------------------------------------------
 
@@ -1039,6 +1340,7 @@ export class Game {
           this.audio.playChime();
           this.effects.burst({ x, y: this.world.heightAt(x, z) + 1, z }, '#9bd1ff', 2.4, 0.5);
           this.ui.toast(`${def.name} construit.`, 'good');
+          this.handleNotices(this.missions.notify({ type: 'build', structure: b.type }));
           if (!this.bases.affordable(this.inventory, def.cost)) this.cancelBuild();
         } else {
           this.ui.toast(result.reason, 'warn');
@@ -1099,6 +1401,29 @@ export class Game {
         this.ui.toast('Inventaire plein.', 'warn');
       }
     }
+    this.refreshPanel();
+  }
+
+  /** Builds the ship on the launch pad (only one ship exists at a time). */
+  buildShip() {
+    const s = this.selectedStructure;
+    const cfg = this.content.vehicles.ship;
+    if (!s || s.typeId !== 'pad' || !s.powered) {
+      this.ui.toast('La plateforme doit être alimentée.', 'warn');
+      return;
+    }
+    if (this.shipExists()) {
+      this.ui.toast('Un vaisseau existe déjà.', 'warn');
+      return;
+    }
+    if (!this.bases.affordable(this.inventory, cfg.cost)) {
+      this.ui.toast('Ressources insuffisantes.', 'warn');
+      return;
+    }
+    this.bases.spend(this.inventory, cfg.cost);
+    this.vehicles.add('ship', s.x, s.z, s.yaw);
+    this.ui.toast('Vaisseau construit sur la plateforme (E pour embarquer).', 'good');
+    this.audio.playChime();
     this.refreshPanel();
   }
 
@@ -1187,6 +1512,27 @@ export class Game {
         return;
       case 'rest':
         this.rest();
+        return;
+      case 'build-ship':
+        this.buildShip();
+        return;
+      case 'station-service':
+        if (this.space) {
+          this.space.service();
+          this.ui.toast('Vaisseau réparé et rechargé.', 'good');
+          this.audio.playChime();
+        }
+        this.refreshPanel();
+        return;
+      case 'station-save':
+        this.save(false);
+        this.refreshPanel();
+        return;
+      case 'station-leave':
+        this.ui.closePanel();
+        if (this.state === 'panel') this.state = 'playing';
+        if (this.space) this.onSpaceEvent({ type: 'undock' }), this.space.undock();
+        this.capturePointer();
         return;
       case 'open-craft':
         this.ui.tab = 'craft';

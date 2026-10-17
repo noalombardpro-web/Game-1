@@ -1,38 +1,366 @@
 {
-  "missions": [
+ "missions": [
+  {
+   "id": "signal",
+   "title": "Retrouver le signal Aurore",
+   "steps": [
     {
-      "id": "signal", "title": "Retrouver le signal Aurore",
-      "steps": [
-        { "id": "reach_camp", "type": "reach", "poi": "camp", "text": "Rejoindre le camp de l'expédition au nord-est." },
-        { "id": "scan_camp", "type": "scan", "poi": "camp", "text": "Scanner la balise de relais du camp (touche R)." }
-      ],
-      "reward": { "energy_cell": 2 },
-      "completion": "Le relais transmet un fragment de journal : l'équipe a suivi une anomalie vers les ruines."
+     "id": "reach_camp",
+     "type": "reach",
+     "poi": "camp",
+     "text": "Rejoindre le camp de l'expédition au nord-est."
     },
     {
-      "id": "fauna", "title": "Cataloguer la faune",
-      "steps": [
-        { "id": "scan_species", "type": "species", "count": 3, "text": "Scanner 3 espèces différentes (touche R sur un animal)." }
-      ],
-      "reward": { "repair_kit": 2 },
-      "completion": "Codex de faune mis à jour. Les espèces prédatrices sont signalées."
-    },
-    {
-      "id": "energy", "title": "Énergie de secours",
-      "steps": [
-        { "id": "collect_crystals", "type": "collect", "item": "crystal_energy", "count": 4, "text": "Collecter 4 cristaux énergétiques (touche E)." }
-      ],
-      "reward": { "module_sensors": 1 },
-      "completion": "Les cristaux alimentent le module de capteurs de secours."
-    },
-    {
-      "id": "ruins", "title": "Trace d'une civilisation",
-      "steps": [
-        { "id": "reach_ruins", "type": "reach", "poi": "ruins", "text": "Atteindre les ruines pré-humaines, en évitant les tourelles." },
-        { "id": "scan_ruins", "type": "scan", "poi": "ruins", "text": "Scanner l'inscription d'un pilier." }
-      ],
-      "reward": { "module_armor": 1 },
-      "completion": "L'inscription décrit une anomalie qui se propage à travers plusieurs mondes."
+     "id": "scan_camp",
+     "type": "scan",
+     "poi": "camp",
+     "text": "Scanner la balise de relais du camp (touche R)."
     }
-  ]
+   ],
+   "reward": {
+    "energy_cell": 2
+   },
+   "completion": "Le relais transmet un fragment de journal : l'équipe a suivi une anomalie vers les ruines."
+  },
+  {
+   "id": "fauna",
+   "title": "Cataloguer la faune",
+   "steps": [
+    {
+     "id": "scan_species",
+     "type": "species",
+     "count": 3,
+     "text": "Scanner 3 espèces différentes (touche R sur un animal)."
+    }
+   ],
+   "reward": {
+    "repair_kit": 2
+   },
+   "completion": "Codex de faune mis à jour. Les espèces prédatrices sont signalées."
+  },
+  {
+   "id": "energy",
+   "title": "Énergie de secours",
+   "steps": [
+    {
+     "id": "collect_crystals",
+     "type": "collect",
+     "item": "crystal_energy",
+     "count": 4,
+     "text": "Collecter 4 cristaux énergétiques (touche E)."
+    }
+   ],
+   "reward": {
+    "module_sensors": 1
+   },
+   "completion": "Les cristaux alimentent le module de capteurs de secours."
+  },
+  {
+   "id": "ruins",
+   "title": "Trace d'une civilisation",
+   "steps": [
+    {
+     "id": "reach_ruins",
+     "type": "reach",
+     "poi": "ruins",
+     "text": "Atteindre les ruines pré-humaines, en évitant les tourelles."
+    },
+    {
+     "id": "scan_ruins",
+     "type": "scan",
+     "poi": "ruins",
+     "text": "Scanner l'inscription d'un pilier."
+    }
+   ],
+   "reward": {
+    "module_armor": 1
+   },
+   "completion": "L'inscription décrit une anomalie qui se propage à travers plusieurs mondes."
+  },
+  {
+   "id": "outpost",
+   "title": "Établir un avant-poste",
+   "steps": [
+    {
+     "id": "build_generator",
+     "type": "build",
+     "text": "Construire une centrale énergétique (touche B).",
+     "structure": "generator"
+    },
+    {
+     "id": "build_habitat",
+     "type": "build",
+     "text": "Construire un module d'habitat à proximité.",
+     "structure": "habitat"
+    },
+    {
+     "id": "build_workbench",
+     "type": "build",
+     "text": "Construire un établi de fabrication.",
+     "structure": "workbench"
+    },
+    {
+     "id": "craft_dive",
+     "type": "craft",
+     "text": "Fabriquer un équipement de plongée à l'établi.",
+     "recipe": "craft_module_dive"
+    }
+   ],
+   "reward": {
+    "energy_cell": 2,
+    "fiber": 4
+   },
+   "completion": "L'avant-poste fonctionne : vous pouvez réparer, recharger et préparer vos expéditions."
+  },
+  {
+   "id": "deep",
+   "title": "Sous la surface",
+   "steps": [
+    {
+     "id": "dive_15",
+     "type": "dive",
+     "text": "Plonger à plus de 15 m de profondeur (Espace monte, C descend).",
+     "depth": 15
+    },
+    {
+     "id": "scan_sunken",
+     "type": "scan",
+     "text": "Scanner les ruines submergées.",
+     "poi": "sunken_ruins"
+    }
+   ],
+   "reward": {
+    "deep_pearl": 2
+   },
+   "completion": "Les glyphes submergés sont identiques à ceux de la surface : la civilisation ancienne vivait aussi sous l'eau."
+  },
+  {
+   "id": "cavern",
+   "title": "Lumière sous la roche",
+   "steps": [
+    {
+     "id": "enter_cavern",
+     "type": "cave",
+     "text": "Entrer dans la caverne cristalline.",
+     "poi": "cavern"
+    },
+    {
+     "id": "collect_rare",
+     "type": "collect",
+     "text": "Prélever 2 cristaux rares dans la caverne.",
+     "item": "rare_crystal",
+     "count": 2
+    }
+   ],
+   "reward": {
+    "module_survival": 1
+   },
+   "completion": "Les cristaux résonnent avec le signal capté au camp."
+  },
+  {
+   "id": "orbit",
+   "title": "Quitter la surface",
+   "steps": [
+    {
+     "id": "build_pad",
+     "type": "build",
+     "text": "Construire une plateforme de lancement.",
+     "structure": "pad"
+    },
+    {
+     "id": "reach_orbit",
+     "type": "orbit",
+     "text": "Construire un vaisseau, décoller et atteindre l'orbite."
+    }
+   ],
+   "reward": {
+    "energy_cell": 3
+   },
+   "completion": "Genesis se déploie sous vos capteurs. Une station et un champ d'astéroïdes sont à portée."
+  },
+  {
+   "id": "station",
+   "title": "Station Aurore",
+   "steps": [
+    {
+     "id": "dock_station",
+     "type": "dock",
+     "text": "S'amarrer à la Station Aurore (touche L près de la baie)."
+    }
+   ],
+   "reward": {
+    "repair_kit": 2
+   },
+   "completion": "La station répond : ses archives indiquent un second monde, Cryos."
+  },
+  {
+   "id": "asteroids",
+   "title": "Récolte orbitale",
+   "steps": [
+    {
+     "id": "mine_ore",
+     "type": "collect",
+     "text": "Extraire 6 minerais métalliques dans le champ d'astéroïdes (tir laser).",
+     "item": "ore_metal",
+     "count": 6
+    },
+    {
+     "id": "salvage_wreck",
+     "type": "loot",
+     "text": "Fouiller l'épave du Perséphone (touche E à proximité).",
+     "poi": "persephone"
+    }
+   ],
+   "reward": {
+    "module_cargo": 1
+   },
+   "completion": "La soute du Perséphone contenait des cartes stellaires dirigées vers une structure inconnue."
+  },
+  {
+   "id": "anomaly",
+   "title": "L'anomalie",
+   "steps": [
+    {
+     "id": "scan_anomaly",
+     "type": "scan",
+     "text": "Scanner la structure anormale près de Cryos (touche R, dans le viseur).",
+     "poi": "anomaly"
+    },
+    {
+     "id": "land_cryos",
+     "type": "land",
+     "text": "Atterrir sur Cryos.",
+     "planet": "cryos"
+    }
+   ],
+   "reward": {
+    "rare_crystal": 2
+   },
+   "completion": "L'anneau émet un signal de convergence : plusieurs mondes sont reliés par la même anomalie."
+  },
+  {
+   "id": "cryos_lab",
+   "title": "Le dernier message",
+   "steps": [
+    {
+     "id": "reach_cryo_lab",
+     "type": "reach",
+     "text": "Rejoindre la station de recherche de Cryos.",
+     "poi": "cryo_lab"
+    },
+    {
+     "id": "scan_cryo_lab",
+     "type": "scan",
+     "text": "Scanner les archives de la station.",
+     "poi": "cryo_lab"
+    }
+   ],
+   "reward": {
+    "module_science": 1
+   },
+   "completion": "Fin de la première partie de l'enquête. Les archives mentionnent d'autres mondes à explorer."
+  }
+ ],
+ "sideMissions": [
+  {
+   "id": "c_samples",
+   "title": "Contrat : échantillons biologiques",
+   "steps": [
+    {
+     "id": "c_bio",
+     "type": "collect",
+     "text": "Collecter 6 matériaux biologiques.",
+     "item": "bio_sample",
+     "count": 6
+    }
+   ],
+   "reward": {
+    "energy_cell": 2
+   },
+   "completion": "Laboratoire satisfait."
+  },
+  {
+   "id": "c_scanner",
+   "title": "Contrat : catalogue étendu",
+   "steps": [
+    {
+     "id": "c_species",
+     "type": "species",
+     "text": "Scanner 8 espèces différentes.",
+     "count": 8
+    }
+   ],
+   "reward": {
+    "repair_kit": 3
+   },
+   "completion": "Le catalogue de faune est bien avancé."
+  },
+  {
+   "id": "c_hunter",
+   "title": "Contrat : neutraliser les sentinelles",
+   "steps": [
+    {
+     "id": "c_drones",
+     "type": "destroy",
+     "text": "Détruire 2 drones sentinelles.",
+     "kind": "sentinel_drone",
+     "count": 2
+    }
+   ],
+   "reward": {
+    "repair_kit": 2,
+    "ore_metal": 4
+   },
+   "completion": "Les sentinelles ne patrouillent plus."
+  },
+  {
+   "id": "c_builder",
+   "title": "Contrat : défense de base",
+   "steps": [
+    {
+     "id": "c_turret",
+     "type": "build",
+     "text": "Construire une tourelle de défense.",
+     "structure": "turret"
+    }
+   ],
+   "reward": {
+    "ore_metal": 6
+   },
+   "completion": "Votre base est protégée."
+  },
+  {
+   "id": "c_diver",
+   "title": "Contrat : grands fonds",
+   "steps": [
+    {
+     "id": "c_dive",
+     "type": "dive",
+     "text": "Atteindre 40 m de profondeur.",
+     "depth": 40
+    }
+   ],
+   "reward": {
+    "deep_pearl": 1,
+    "rare_crystal": 1
+   },
+   "completion": "Données bathymétriques transmises."
+  },
+  {
+   "id": "c_pilot",
+   "title": "Contrat : reconnaissance aérienne",
+   "steps": [
+    {
+     "id": "c_fly",
+     "type": "drive",
+     "text": "Piloter un véhicule aérien (drone ou aéronef).",
+     "kind": "air"
+    }
+   ],
+   "reward": {
+    "electronic_part": 3
+   },
+   "completion": "La carte aérienne est mise à jour."
+  }
+ ]
 }
