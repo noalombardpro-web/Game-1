@@ -25,7 +25,7 @@ export class CameraRig {
   /** Applies mouse look. `look` = { dx, dy } in pixels. */
   applyLook(look, active) {
     if (!active) return;
-    const s = this.settings.sensitivity * 0.0006;
+    const s = this.settings.sensitivity * 0.0006 * (this.lookScale ?? 1);
     const invert = this.settings.invertY ? -1 : 1;
     this.yaw -= look.dx * s;
     this.pitch = clamp(this.pitch - look.dy * s * invert, -1.2, 0.9);

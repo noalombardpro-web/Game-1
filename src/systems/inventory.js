@@ -6,6 +6,9 @@ export const MODULE_SLOTS = ['propulsion', 'armor', 'sensors', 'survival', 'scie
 /** Crafting stations, from the portable kit to the research lab. A higher station can craft lower recipes. */
 export const STATION_RANK = { hand: 0, workbench: 1, lab: 2 };
 
+/** Categories carried outside the cargo hold (weapon rack, ammo belt, building materials): they only respect their stack limit. */
+export const UNBAGGED = new Set(['weapon', 'ammo', 'material']);
+
 export class Inventory {
   /**
    * @param content  loaded content (items, recipes, capacity)
@@ -20,7 +23,7 @@ export class Inventory {
     this.counts = {};
     this.modules = Object.fromEntries(MODULE_SLOTS.map((slot) => [slot, null]));
     for (const [id, n] of Object.entries(saved.counts ?? {})) {
-      if (this.items[id] && Number.isInteger(n) && n > 0) this.counts[id] = Math.min(n, this.capacity);
+      if (this.items[id] && Number.isInteger(n) && n > 0) this.counts[id] = Math.min(n, this.isBagged(id) ? this.capacity : this.items[id].stack ?? 999);
     }
     for (const slot of MODULE_SLOTS) {
       const id = saved.modules?.[slot];
@@ -32,8 +35,14 @@ export class Inventory {
     return this.baseCapacity + this.effects.capacityBonus + this.externalCapacity;
   }
 
+  isBagged(id) {
+    return !UNBAGGED.has(this.items[id]?.category);
+  }
+
   get used() {
-    return Object.values(this.counts).reduce((sum, n) => sum + n, 0);
+    let sum = 0;
+    for (const [id, n] of Object.entries(this.counts)) if (this.isBagged(id)) sum += n;
+    return sum;
   }
 
   count(id) {
@@ -44,7 +53,7 @@ export class Inventory {
   add(id, amount = 1) {
     const item = this.items[id];
     if (!item) throw new Error(`Unknown item ${id}`);
-    const space = Math.max(0, this.capacity - this.used);
+    const space = this.isBagged(id) ? Math.max(0, this.capacity - this.used) : Math.max(0, (item.stack ?? 999) - this.count(id));
     const stored = Math.min(amount, space);
     if (stored > 0) this.counts[id] = (this.counts[id] ?? 0) + stored;
     return stored;
@@ -82,7 +91,7 @@ export class Inventory {
     const output = recipe.output;
     const outputItem = this.items[output.item];
     const freeSpace = this.capacity - this.used + Object.entries(recipe.ingredients).reduce((s, [, n]) => s + n, 0);
-    if (outputItem.category !== 'module' && freeSpace < output.count) {
+    if (outputItem.category !== 'module' && this.isBagged(output.item) && freeSpace < output.count) {
       return { ok: false, message: 'Capacité de stockage insuffisante.' };
     }
     for (const [id, n] of Object.entries(recipe.ingredients)) this.remove(id, n);

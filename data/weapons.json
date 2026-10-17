@@ -1,0 +1,13 @@
+{
+  "_comment": "Sci-fi weapons. Owned when the matching item (weapon_<id>) is in the inventory. ammo = item id; damage per pellet; spread in radians; rate = seconds between shots; auto = hold to fire; zoom = field of view while aiming (right click); projectile weapons fire a slow explosive round.",
+  "slots": ["plasma_pistol", "laser_rifle", "pulse_shotgun", "rail_sniper", "rocket_launcher"],
+  "weapons": [
+    { "id": "plasma_pistol", "name": "Pistolet plasma", "ammo": "ammo_cell", "mag": 12, "damage": 24, "pellets": 1, "spread": 0.012, "rate": 0.28, "auto": false, "reload": 1.1, "range": 80, "zoom": 55, "color": "#7fe9ff", "noise": 0.7, "recoil": 0.03 },
+    { "id": "laser_rifle", "name": "Fusil laser", "ammo": "ammo_cell", "mag": 30, "damage": 13, "pellets": 1, "spread": 0.02, "rate": 0.1, "auto": true, "reload": 1.8, "range": 110, "zoom": 45, "color": "#ff4d6d", "noise": 0.85, "recoil": 0.018 },
+    { "id": "pulse_shotgun", "name": "Fusil à impulsions", "ammo": "ammo_shell", "mag": 6, "damage": 11, "pellets": 8, "spread": 0.09, "rate": 0.85, "auto": false, "reload": 2.2, "range": 30, "zoom": 60, "color": "#ffd166", "noise": 1, "recoil": 0.09 },
+    { "id": "rail_sniper", "name": "Fusil à rail", "ammo": "ammo_rail", "mag": 4, "damage": 140, "pellets": 1, "spread": 0.002, "rate": 1.4, "auto": false, "reload": 2.6, "range": 320, "zoom": 18, "color": "#b18cff", "noise": 1, "recoil": 0.12 },
+    { "id": "rocket_launcher", "name": "Lance-roquettes", "ammo": "ammo_rocket", "mag": 2, "damage": 95, "pellets": 1, "spread": 0.004, "rate": 1.3, "auto": false, "reload": 3, "range": 200, "zoom": 50, "color": "#ff8a3d", "noise": 1, "recoil": 0.15, "projectile": { "speed": 42, "radius": 6, "gravity": 2 } }
+  ],
+  "harvest": { "name": "Outil de récolte", "rate": 0.55, "range": 3.4, "tree": { "item": "mat_wood", "amount": 6, "hits": 6 }, "rock": { "item": "mat_stone", "amount": 5, "hits": 6 } },
+  "start": { "weapon_plasma_pistol": 1, "weapon_laser_rifle": 1, "ammo_cell": 120, "ammo_shell": 12, "mat_wood": 150, "mat_stone": 80, "mat_metal": 40 }
+}

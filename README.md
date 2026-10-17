@@ -1,7 +1,7 @@
 # PROJECT GENESIS
 
 Prototype de jeu d'exploration et de survie en science-fiction, en monde ouvert, en 3D dans le navigateur
-(Three.js + Vite). Le robot explorateur parcourt un monde procédural streamé, observe une faune
+(Three.js + Vite). Le personnage (soldat, exploratrice ou civile) parcourt un monde procédural streamé, observe une faune
 (herbivores, prédateurs, dinosaures), affronte des ennemis artificiels, pilote un rover, collecte et
 fabrique, scanne les lieux et suit des missions facultatives.
 
@@ -47,16 +47,23 @@ donnent le même monde). Cliquez dans la scène pour capturer la souris. Échap 
 | Saut | Espace |
 | Course (consomme de l'énergie) | Maj |
 | Accroupir (bascule) | C |
-| Interagir : collecter, ouvrir un conteneur, monter / descendre du rover | E |
+| Interagir : collecter, ouvrir un conteneur, monter / descendre d'un véhicule | E |
 | Lampe frontale | F |
 | Scanner la cible dans le viseur (codex, missions) | R |
 | Utiliser un consommable (recharge ou réparation selon le besoin) | U |
-| Tir plasma (maintenir) | Clic gauche |
+| Tirer (maintenir pour les armes automatiques) | Clic gauche |
+| Viser / zoom (lunette du fusil à rail) | Clic droit |
+| Armes 1 à 5 · outil de récolte · molette = arme suivante | 1–5 · 0 · molette |
+| Recharger | Q |
+| Jetpack : deuxième appui sur Espace en l'air, maintenir | Espace ×2 |
+| Construction rapide (mur 1, sol 2, rampe 3, toit 4 ; clic droit = bois / pierre / métal) | G |
+| Éditer la pièce visée (portes, fenêtres) | H |
+| Garde-robe (tenues du personnage) | O |
 | Inventaire / fabrication / modules | Tab |
 | Carte | M |
 | Journal de mission | J |
 | Codex | K |
-| Changer de caméra (3e / 1re personne) | V |
+| Changer de caméra (3e personne ↔ 1re personne avec arme en main) | V |
 | Performances (overlay) | F3 |
 | Menu / fermer un panneau | Échap |
 
@@ -69,6 +76,30 @@ Réparation / recharge d'un véhicule : U avec un kit de réparation / une cellu
 Les commandes sont listées et rebindables dans **Paramètres → Commandes** ; les modifications sont
 stockées localement. Le fichier de référence est `data/controls.json`.
 
+## Nouveautés (version 0.3)
+
+- **Personnage humain** à la place du robot : soldat, exploratrice ou civile (modèles animés Mixamo :
+  repos, marche, course, accroupi, saut, nage, visée), **12 tenues** au choix dans la garde-robe (O ou
+  Échap → Garde-robe), vue **1re personne** (arme visible) ou **3e personne** (V). Le corps se tourne
+  vers la visée.
+- **Armes sci-fi** : pistolet plasma, fusil laser (automatique), fusil à impulsions (dispersion),
+  fusil à rail (lunette), lance-roquettes (explosion de zone, dégâts aux constructions). Chargeurs,
+  munitions à fabriquer (Tab → Fabrication), rechargement (Q), recul, zoom. Pistolet et fusil laser
+  au départ ; les autres se fabriquent à l'établi / au laboratoire.
+- **Jetpack** : second appui sur Espace en l'air, carburant qui se recharge au sol.
+- **Construction rapide façon Fortnite** (G) : murs, sols, rampes et toits sur une grille de 4 m,
+  trois matériaux (bois, pierre, métal) avec points de structure différents, construction en continu
+  en maintenant le clic, **mode édition** (H) pour découper portes et fenêtres, effondrement des
+  pièces qui ne touchent plus le sol, collisions (on marche sur les sols et rampes, les murs bloquent),
+  sauvegarde. Matériaux récoltés avec l'outil de récolte (0) sur les arbres et rochers.
+- **Textures photographiques** (CC-BY, voir `public/assets/CREDITS.md`) : sol en 7 couches (herbe, terre,
+  sable, neige, terre sèche, lave émissive, roche) mélangées selon le biome et la pente ; bois, brique
+  et métal pour les constructions.
+- **Lacs d'eau douce** dans les plaines (nouveau biome, truites, flamants, crocodiles).
+- **18 nouvelles espèces** (42 au total) : cheval, flamant, ara, cigogne et truite (modèles 3D animés),
+  cerf, loup (meute), lièvre, ours, bison, crocodile, manchot, dromadaire, grenouille géante, aigle,
+  scorpion géant, dauphin, renard polaire.
+
 ## Fonctionnalités opérationnelles
 
 - **Monde** : continents, océans (plateau, abysses), archipels, canyons, volcans, cratères, pôles ; tuiles
@@ -77,7 +108,7 @@ stockées localement. Le fichier de référence est `data/controls.json`.
   toundra, plateau rocheux, désert, jungle, marécage, forêt de conifères, forêt tempérée, prairie.
 - **Points d'intérêt** (`data/world.json`) : camp, ruines, épave, installation abandonnée, laboratoire isolé,
   site de cratère, caverne, épave de récif, ruines englouties ; placés selon biome ; conteneurs à fouiller.
-- **Robot** : marche, course, saut, accroupi, nage 3D (plongée avec limite de pression, bulles), gestes
+- **Personnage** : marche, course, saut, accroupi, nage 3D (plongée avec limite de pression, bulles), gestes
   d'outil (scan, collecte, réparation), usure de l'outil, 5+ emplacements de modules aux effets réels
   (course, blindage, scan, thermique, plongée, nage, saut, capacité, outils).
 - **Faune** (25 espèces) : mammifères, reptiles, dinosaures, oiseaux/planeurs, essaims, faune marine
@@ -97,7 +128,7 @@ stockées localement. Le fichier de référence est `data/controls.json`.
   (reach, scan, craft, build, dive, kill, drive, land…), journal, récompenses.
 - **Météo / environnement** : jour/nuit, pluie, orage, neige, brouillard, sable, cendres volcaniques ;
   rendu sous-marin et assombrissement en altitude.
-- **Sauvegarde atomique** (somme de contrôle + secours) : robot, inventaire, missions, codex, véhicules,
+- **Sauvegarde atomique** (somme de contrôle + secours) : personnage, inventaire, armes, constructions, missions, codex, véhicules,
   structures, planète courante et états des autres, session spatiale.
 - **Interface** : HUD, boussole, radar (portée accrue avec antenne), carte, journal, codex, inventaire,
   panneaux construction/station, HUD véhicule et spatial, réglages (sensibilité, volume, qualité).
@@ -138,8 +169,8 @@ Les chiffres de l'environnement de test (rendu logiciel, sans GPU) ne sont pas r
 
 ## Licences et ressources
 
-- **Code du projet** : tout le code et tout le contenu (terrain, végétation, créatures, bâtiments,
-  sons) sont générés par le code ; aucun asset tiers n'est utilisé. Le projet est fourni sans licence
+- **Code du projet** : terrain, végétation, la plupart des créatures, bâtiments et sons sont générés
+  par le code. Textures et modèles tiers : voir `public/assets/CREDITS.md` (CC-BY, Mixamo, three.js). Le projet est fourni sans licence
   de redistribution particulière pour l'instant.
 - **Dépendances** (npm, voir `package.json`) :
   - `three` (0.186.1) — licence MIT, utilisée pour le rendu et l'addon `Sky`.
@@ -155,7 +186,7 @@ index.html            page, HUD et écran d'accueil
 data/                 contenu configurable (biomes, espèces, objets, missions/POI, ennemis, commandes)
 src/app/              boucle principale (Game), entrées, réglages
 src/world/            terrain, tuiles, végétation, POI, environnement, météo
-src/entities/         robot, caméra, faune, ennemis, rover, effets
+src/entities/         personnage, armes, caméra, faune, ennemis, effets ; src/building/ construction rapide
 src/ai/               machines à états, perception, navigation
 src/systems/          survie, inventaire, missions, sauvegarde, scan
 src/audio/ src/ui/ src/perf/

@@ -80,6 +80,39 @@
   ],
   "land": [
    "KeyL"
+  ],
+  "weapon_1": [
+   "Digit1"
+  ],
+  "weapon_2": [
+   "Digit2"
+  ],
+  "weapon_3": [
+   "Digit3"
+  ],
+  "weapon_4": [
+   "Digit4"
+  ],
+  "weapon_5": [
+   "Digit5"
+  ],
+  "weapon_0": [
+   "Digit0"
+  ],
+  "reload": [
+   "KeyQ"
+  ],
+  "aim": [
+   "Mouse2"
+  ],
+  "grid_build": [
+   "KeyG"
+  ],
+  "edit": [
+   "KeyH"
+  ],
+  "wardrobe": [
+   "KeyO"
   ]
  },
  "labels": {
@@ -107,6 +140,17 @@
   "rotate_right": "Pivoter à droite (construction)",
   "dismantle": "Démonter une structure proche",
   "nav": "Cible suivante (navigation spatiale)",
-  "land": "Atterrir / amarrer / décoller de la station"
+  "land": "Atterrir / amarrer / décoller de la station",
+  "weapon_1": "Arme 1 / Mur (construction)",
+  "weapon_2": "Arme 2 / Sol (construction)",
+  "weapon_3": "Arme 3 / Rampe (construction)",
+  "weapon_4": "Arme 4 / Toit (construction)",
+  "weapon_5": "Arme 5",
+  "weapon_0": "Outil de récolte",
+  "reload": "Recharger",
+  "aim": "Viser / changer de matériau (construction)",
+  "grid_build": "Mode construction rapide (murs, sols, rampes, toits)",
+  "edit": "Éditer la pièce visée",
+  "wardrobe": "Garde-robe (skins)"
  }
 }

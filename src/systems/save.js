@@ -22,7 +22,7 @@ const isNum = (v, min = -Infinity, max = Infinity) => typeof v === 'number' && N
 export function validateSave(data) {
   if (!data || typeof data !== 'object') throw new Error('save: not an object');
   if (data.version !== SAVE_VERSION) throw new Error(`save: unsupported version ${data.version}`);
-  const { player, robot, inventory, missions, codex, collected, rover, clock, seed, difficulty, checksum: sum, structures: _structures, vehicles: _vehicles, planet: _planet, planets: _planets, space: _space, inSpace: _inSpace, ...rest } = data;
+  const { player, robot, inventory, missions, codex, collected, rover, clock, seed, difficulty, checksum: sum, structures: _structures, vehicles: _vehicles, planet: _planet, planets: _planets, space: _space, inSpace: _inSpace, grid: _grid, weapons: _weapons, ...rest } = data;
   if (!isNum(seed, 0, 0xffffffff)) throw new Error('save: bad seed');
   if (!player || !isNum(player.x, -1e7, 1e7) || !isNum(player.z, -1e7, 1e7) || !isNum(player.yaw)) throw new Error('save: bad player');
   if (!robot || !isNum(robot.energy, 0, 100) || !isNum(robot.integrity, 0, 100)) throw new Error('save: bad robot');
@@ -58,6 +58,10 @@ export function validateSave(data) {
     inSpace: !!data.inSpace && !!data.space,
     collected,
     vehicles: vehicleList,
+    grid: Array.isArray(data.grid) ? data.grid.filter((p) => p && typeof p.type === 'string' && isNum(p.i) && isNum(p.j) && isNum(p.k)).slice(0, 5000) : [],
+    weapons: data.weapons && typeof data.weapons === 'object' && data.weapons.mags && typeof data.weapons.mags === 'object'
+      ? { current: typeof data.weapons.current === 'string' ? data.weapons.current : null, mags: data.weapons.mags }
+      : null,
     clock: { timeOfDay: clock.timeOfDay },
     extra: rest
   };

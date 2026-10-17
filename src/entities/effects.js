@@ -28,6 +28,15 @@ export class Effects {
     this.items.push({ object: mesh, life, total: life, grow: radius });
   }
 
+  /** Tiny, very short flash (muzzle). */
+  flash(pos, color = '#fff1c1', size = 0.07) {
+    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, depthWrite: false });
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 6), material);
+    mesh.position.set(pos.x, pos.y, pos.z);
+    this.scene.add(mesh);
+    this.items.push({ object: mesh, life: 0.06, total: 0.06 });
+  }
+
   update(dt) {
     this.items = this.items.filter((item) => {
       item.life -= dt;

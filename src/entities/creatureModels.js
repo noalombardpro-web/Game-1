@@ -1,6 +1,7 @@
 // Procedural creature bodies. Four archetypes (quadruped, biped, sauropod, flyer) are
 // scaled from the species data sheet. Geometry and materials are shared per species.
 import * as THREE from 'three';
+import { getModel } from './modelLibrary.js';
 
 const cache = new Map();
 
@@ -321,6 +322,54 @@ export function createCreatureView(species, traits = { size: 1 }) {
         const flap = c.speed > 0.5 ? Math.sin(time * 14) * 0.8 : Math.sin(time * 2) * 0.12;
         parts.wings.forEach((w, i) => { w.rotation.z = (i === 0 ? 1 : -1) * flap; });
       }
+    }
+  };
+}
+
+const modelBox = new THREE.Box3();
+const modelSize = new THREE.Vector3();
+
+/**
+ * View built from an animated glTF (species.model: horse, flamingo, parrot, stork, fish).
+ * Returns null while the file is not loaded, so the caller falls back to the procedural view.
+ */
+export function createModelView(species, traits = { size: 1 }) {
+  if (!species.model) return null;
+  const gltf = getModel(species.model);
+  if (!gltf) return null;
+  const root = new THREE.Group();
+  const inner = gltf.scene.clone(true);
+  inner.updateMatrixWorld(true);
+  modelBox.setFromObject(inner);
+  modelBox.getSize(modelSize);
+  const scale = (species.size.length * (traits.size ?? 1)) / Math.max(modelSize.x, modelSize.z, 1e-3);
+  inner.scale.setScalar(scale);
+  const swimmer = species.archetype === 'fish';
+  inner.position.y = swimmer ? -((modelBox.min.y + modelBox.max.y) / 2) * scale : -modelBox.min.y * scale;
+  const yawFix = new THREE.Group();
+  yawFix.rotation.y = species.modelYaw ?? 0;
+  yawFix.add(inner);
+  root.add(yawFix);
+  inner.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  const mixer = gltf.animations.length ? new THREE.AnimationMixer(inner) : null;
+  const action = mixer ? mixer.clipAction(gltf.animations[0]) : null;
+  action?.play();
+  if (action) action.time = Math.random() * action.getClip().duration;
+  let time = Math.random() * 10;
+  return {
+    root,
+    dispose() { mixer?.stopAllAction(); },
+    update(dt, c) {
+      time += dt;
+      root.position.set(c.x, c.y, c.z);
+      root.rotation.set(0, c.yaw, c.alive ? 0 : Math.min(1.5, c.deadTimer * 2));
+      if (swimmer) yawFix.rotation.y = (species.modelYaw ?? 0) + Math.sin(time * (4 + c.speed * 2)) * 0.18;
+      if (!mixer) return;
+      const flyer = species.archetype === 'flyer';
+      const asleep = c.asleep || c.state === 'sleep' || !c.alive;
+      const rate = flyer ? (c.speed > 0.5 ? 1 : 0.35) : Math.min(2.2, c.speed / Math.max(1, species.speed.walk * 2.5));
+      action.timeScale = asleep ? 0 : rate;
+      mixer.update(dt);
     }
   };
 }

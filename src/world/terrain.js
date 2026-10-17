@@ -15,6 +15,7 @@ export const WATER_LEVEL = 6;
 
 const VOLCANO_CELL = 2600;
 const CRATER_CELL = 3600;
+const LAKE_CELL = 1100;
 const SAFE_SPAWN_RADIUS = 1000;
 
 /** True when a biome rule (minAlt, maxTemp, minVolcano ...) accepts the sample. */
@@ -28,6 +29,7 @@ export function ruleMatches(rule, s) {
   if (rule.minVolcano !== undefined && s.vol < rule.minVolcano) return false;
   if (rule.minCrater !== undefined && s.crater < rule.minCrater) return false;
   if (rule.minCanyon !== undefined && s.canyon < rule.minCanyon) return false;
+  if (rule.minLake !== undefined && !(s.lake >= rule.minLake)) return false;
   return true;
 }
 
@@ -103,7 +105,41 @@ export function createTerrain(seed, biomeRules, options = {}) {
     }
   }
 
-  const scratch = { h: 0, vol: 0, lift: 0, crater: 0, craterLift: 0, canyon: 0, ocean: 0, depth: 0 };
+  /**
+   * Freshwater lakes: round basins dug into low ground, deep enough to hold water (the sea level is
+   * shared). Returns the lake mask (0..1) and writes the carved height into out.lakeH.
+   */
+  function lakeAt(x, z, h, land, out) {
+    out.lake = 0;
+    out.lakeH = h;
+    if (land < 0.5) return;
+    const lowland = smoothstep(WATER_LEVEL + 52, WATER_LEVEL + 30, h) * smoothstep(0.5, 0.95, land);
+    if (lowland <= 0) return;
+    const ci = Math.floor(x / LAKE_CELL);
+    const cj = Math.floor(z / LAKE_CELL);
+    for (let i = ci - 1; i <= ci + 1; i++) {
+      for (let j = cj - 1; j <= cj + 1; j++) {
+        const k = hash2(s ^ 0x1a4e, i, j);
+        if ((k & 255) / 255 > 0.55) continue;
+        const cx = (i + 0.2 + 0.6 * (((k >>> 8) & 255) / 255)) * LAKE_CELL;
+        const cz = (j + 0.2 + 0.6 * (((k >>> 16) & 255) / 255)) * LAKE_CELL;
+        if (Math.hypot(cx, cz) < 160) continue;
+        const R = 110 + 170 * (((k >>> 24) & 255) / 255);
+        // Wobbly shoreline.
+        const wobble = 1 + 0.18 * detail(x / 45 + i * 7, z / 45 - j * 3);
+        const t = Math.hypot(x - cx, z - cz) / (R * wobble);
+        if (t >= 1.7) continue;
+        const depth = 5 + 5 * (((k >>> 4) & 255) / 255);
+        const bowl = WATER_LEVEL - 0.8 - depth * Math.max(0, 1 - t * t);
+        const carved = Math.min(h, bowl + (h - bowl) * smoothstep(0.85, 1.7, t));
+        const lakeH = h + (carved - h) * lowland;
+        if (lakeH < out.lakeH) out.lakeH = lakeH;
+        out.lake = Math.max(out.lake, lowland * smoothstep(1.08, 0.75, t));
+      }
+    }
+  }
+
+  const scratch = { h: 0, vol: 0, lift: 0, crater: 0, craterLift: 0, canyon: 0, ocean: 0, depth: 0, lake: 0, lakeH: 0 };
 
   /** Fills `out` with ground height and the large-scale masks at (x, z). */
   function compute(x, z, out) {
@@ -132,6 +168,9 @@ export function createTerrain(seed, biomeRules, options = {}) {
     const canyon = smoothstep(0.955, 0.99, c) * smoothstep(22, 48, landH) * land * (1 - 0.6 * mask);
     h -= canyon * (46 + detail(x / 30, z / 30) * 4);
 
+    lakeAt(x, z, h, land, out);
+    h = out.lakeH;
+
     volcanoAt(x, z, out);
     craterAt(x, z, out);
     h += out.lift + out.craterLift;
@@ -155,7 +194,7 @@ export function createTerrain(seed, biomeRules, options = {}) {
     const equator = 1 - smoothstep(0, 3200, Math.abs(z));
     const temp = 19 + equator * 6 + climateShift + climateTemp(x / 2600, z / 2600) * 12 - lat * 40 - Math.max(0, scratch.h) * 0.0065 + scratch.vol * 22;
     const moist = Math.min(1, Math.max(0, 0.5 + 0.55 * climateMoist(x / 1800, z / 1800)));
-    return { h: scratch.h, temp, moist, vol: scratch.vol, canyon: scratch.canyon, crater: scratch.crater, ocean: scratch.ocean };
+    return { h: scratch.h, temp, moist, vol: scratch.vol, canyon: scratch.canyon, crater: scratch.crater, ocean: scratch.ocean, lake: scratch.lake };
   }
 
   /** Index into biomeRules of the first rule matching the sample. */

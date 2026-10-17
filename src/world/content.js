@@ -9,6 +9,8 @@ import missionsData from '../../data/missions.json';
 import controlsData from '../../data/controls.json';
 import vehiclesData from '../../data/vehicles.json';
 import structuresData from '../../data/structures.json';
+import weaponsData from '../../data/weapons.json';
+import skinsData from '../../data/skins.json';
 import { hexToLinear } from './chunkGenerator.js';
 
 /** Returns a fresh, validated copy of all content tables. */
@@ -39,6 +41,8 @@ export function loadContent() {
     sideMissions: missionsData.sideMissions ?? [],
     controls: controlsData,
     vehicles: vehiclesData.vehicles,
-    structures: structuresData
+    structures: structuresData,
+    weapons: weaponsData,
+    skins: skinsData
   };
 }

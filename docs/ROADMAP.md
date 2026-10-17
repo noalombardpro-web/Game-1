@@ -62,3 +62,16 @@ collisions sol/murs, créatures de grotte) ; (2) directeur d'événements aléat
 tempête, épave, anomalie) ; (3) ennemis : couverts, flanc, laisse ; (4) ambiances sous-marines ;
 (5) tests e2e supplémentaires (construction via l'UI, fabrication à l'établi, plongée profonde) ;
 (6) mesures GPU réelles et réduction des draw calls (169 en qualité basse).
+
+## État après la mise à jour personnage / armes / construction
+
+Fait : personnage humain animé (3 modèles, 12 tenues), vue 1re / 3e personne, 5 armes sci-fi avec
+munitions et rechargement, jetpack, construction rapide sur grille (mur, sol, rampe, toit) avec édition
+et effondrement, textures photographiques du terrain et des constructions, lacs d'eau douce,
+18 nouvelles espèces.
+
+À faire ensuite : animations dédiées (saut, nage, tir) au lieu des poses procédurales ; dégâts des
+ennemis sur les constructions et couverture derrière les murs ; édition des rampes et toits ;
+pièges ; textures CC0 en plus haute résolution (ambientCG / Poly Haven) et cartes de normales ;
+mesures de performance sur GPU réel (le rendu logiciel des tests est passé de ~1,1 à ~0,5 image/s
+avec les textures et les personnages ; le temps CPU de jeu est passé de ~5,5 à ~8,5 ms par image).

@@ -20,6 +20,9 @@ export class Input {
     };
     this.onLockChange = () => { this.pointerLocked = document.pointerLockElement === this.element; };
     this.onBlur = () => { this.held.clear(); };
+    this.wheel = 0;
+    this.onWheel = (e) => { if (this.pointerLocked) this.wheel += Math.sign(e.deltaY); };
+    this.onContextMenu = (e) => e.preventDefault();
     this.capture = null;
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -27,6 +30,8 @@ export class Input {
     window.addEventListener('mouseup', this.onMouseUp);
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('blur', this.onBlur);
+    window.addEventListener('wheel', this.onWheel, { passive: true });
+    element.addEventListener('contextmenu', this.onContextMenu);
     document.addEventListener('pointerlockchange', this.onLockChange);
   }
 
@@ -99,6 +104,22 @@ export class Input {
     return out;
   }
 
+  /** Mouse wheel notches since the last call (+1 = down / next). */
+  consumeWheel() {
+    const w = this.wheel;
+    this.wheel = 0;
+    return w;
+  }
+
+  /** Forgets held buttons and pending presses (a menu click must not fire in the game). */
+  reset() {
+    this.held.clear();
+    this.edges.clear();
+    this.wheel = 0;
+    this.look.dx = 0;
+    this.look.dy = 0;
+  }
+
   /** Clears one-frame edges. Call at the end of every frame. */
   endFrame() {
     this.edges.clear();
@@ -111,6 +132,8 @@ export class Input {
     window.removeEventListener('mouseup', this.onMouseUp);
     window.removeEventListener('mousemove', this.onMouseMove);
     window.removeEventListener('blur', this.onBlur);
+    window.removeEventListener('wheel', this.onWheel);
+    this.element.removeEventListener('contextmenu', this.onContextMenu);
     document.removeEventListener('pointerlockchange', this.onLockChange);
   }
 }

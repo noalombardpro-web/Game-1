@@ -1,7 +1,7 @@
-// Robot player controller: ground-following movement on the procedural terrain,
-// jumping with gravity, fall damage, shallow swimming, collisions and animation.
+// Player controller: ground-following movement on the procedural terrain and on built floors and
+// ramps, jumping with gravity, jetpack, fall damage, 3D swimming, collisions and animation.
 import * as THREE from 'three';
-import { createRobotModel } from './robotModel.js';
+import { createCharacterModel } from './characterModel.js';
 import { WATER_LEVEL } from '../world/terrain.js';
 import { clamp, wrapAngle } from '../core/math.js';
 
@@ -14,17 +14,23 @@ const PLAYER_RADIUS = 0.42;
 const SAFE_FALL = 6;
 const SWIM_SPEED = 3.2;
 const BASE_DIVE_LIMIT = 18;
+const PLAYER_HEIGHT = 1.8;
+export const JET_FUEL = 100;
+const JET_BURN = 24;
+const JET_REFILL = 34;
+const JET_ACCEL = 26;
+const JET_MAX_RISE = 7.5;
 
 export class Player {
   /**
    * @param scene  three.js scene
    * @param world  streaming world (heightAt, resolveCollisions, collidersNear)
-   * @param robot  RobotState
+   * @param robot  RobotState (vitals of the character)
    */
   constructor(scene, world, robot) {
     this.world = world;
     this.robot = robot;
-    this.model = createRobotModel();
+    this.model = createCharacterModel();
     scene.add(this.model.root);
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
@@ -48,10 +54,17 @@ export class Player {
     this.landStrength = 0;
     this.actionState = null;
     this.pressureTimer = 0;
+    this.jetFuel = JET_FUEL;
+    this.jetting = false;
+    this.jetArmed = false;
+    this.jetRefillDelay = 0;
+    this.aim = 0;
+    this.faceCamera = false;
   }
 
+  /** Ground under the feet: terrain, or a built floor / ramp / roof reachable from the current height. */
   get groundY() {
-    return this.world.heightAt(this.pos.x, this.pos.z);
+    return this.world.groundAt(this.pos.x, this.pos.z, this.pos.y);
   }
 
   /** Drops a spawn point onto the ground. */
@@ -104,18 +117,44 @@ export class Player {
       const vz = (dirZ / dirLen) * desired;
       this.vel.x += (vx - this.vel.x) * Math.min(1, accel * dt);
       this.vel.z += (vz - this.vel.z) * Math.min(1, accel * dt);
-      this.yaw = wrapAngle(Math.atan2(dirX, dirZ));
+      if (this.aim < 0.5 && !this.faceCamera) this.yaw = wrapAngle(Math.atan2(dirX, dirZ));
     } else {
       const k = Math.min(1, 10 * dt);
       this.vel.x -= this.vel.x * k;
       this.vel.z -= this.vel.z * k;
     }
 
-    if (input.pressed('jump') && this.grounded && !this.swimming && this.robot.spend(3)) {
-      this.vel.y = JUMP_SPEED;
-      this.grounded = false;
-      this.events.push({ type: 'jump' });
+    // Aiming (or first person): the body turns to face where the camera looks, and strafes.
+    if ((this.aim >= 0.5 || this.faceCamera) && !this.swimming) {
+      this.yaw = wrapAngle(this.yaw + wrapAngle(camYaw - this.yaw) * Math.min(1, 12 * dt));
     }
+    if (input.pressed('jump') && this.grounded && !this.swimming && this.robot.spend(3)) {
+      this.vel.y = JUMP_SPEED * (1 + (this.modifiers.jumpBonus ?? 0));
+      this.grounded = false;
+      this.jetArmed = false;
+      this.events.push({ type: 'jump' });
+    } else if (input.pressed('jump') && !this.grounded && !this.swimming) {
+      // Second press in the air ignites the jetpack; holding the key keeps it burning.
+      this.jetArmed = true;
+    }
+    const wasJetting = this.jetting;
+    this.jetting = this.jetArmed && !this.grounded && !this.swimming && input.isDown('jump') && this.jetFuel > 0;
+    if (this.jetting) {
+      this.jetFuel = Math.max(0, this.jetFuel - JET_BURN * dt);
+      this.vel.y = Math.min(JET_MAX_RISE, this.vel.y + JET_ACCEL * dt);
+      this.airPeak = this.pos.y;
+      this.jetRefillDelay = 0.8;
+      if (moving) {
+        const dirLen = Math.hypot(dirX, dirZ) || 1;
+        this.vel.x += ((dirX / dirLen) * 9 - this.vel.x) * Math.min(1, 2.5 * dt);
+        this.vel.z += ((dirZ / dirLen) * 9 - this.vel.z) * Math.min(1, 2.5 * dt);
+      }
+    } else if (this.grounded || this.swimming) {
+      this.jetArmed = false;
+      this.jetRefillDelay -= dt;
+      if (this.jetRefillDelay <= 0) this.jetFuel = Math.min(JET_FUEL, this.jetFuel + JET_REFILL * dt);
+    }
+    if (this.jetting !== wasJetting) this.events.push({ type: this.jetting ? 'jet-start' : 'jet-stop' });
     if (!this.grounded && !this.swimming) {
       this.vel.y -= GRAVITY * dt;
     }
@@ -123,10 +162,15 @@ export class Player {
     // Horizontal move with collision against trees, rocks and vehicles.
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
-    this.world.resolveCollisions(this.pos, PLAYER_RADIUS);
+    this.world.resolveCollisions(this.pos, PLAYER_RADIUS, PLAYER_HEIGHT);
 
     // Vertical: ground following, falls and water surface.
     const ground = this.groundY;
+    const ceiling = this.world.ceilingAt(this.pos.x, this.pos.z, this.pos.y + PLAYER_HEIGHT + Math.max(0, this.vel.y * dt), this.pos.y);
+    if (this.vel.y > 0 && this.pos.y + PLAYER_HEIGHT + this.vel.y * dt > ceiling) {
+      this.vel.y = 0;
+      this.pos.y = Math.min(this.pos.y, ceiling - PLAYER_HEIGHT);
+    }
     if (this.swimming) {
       // Three-dimensional swimming: Space ascends, C descends, otherwise the robot holds its depth
       // (and floats up gently when it is close to the surface).
@@ -197,13 +241,18 @@ export class Player {
       speed: this.grounded ? horizontal : horizontal * 0.4, grounded: this.grounded,
       crouch: this.crouched ? 1 : 0, sprint: wantsSprint, dt, airVel: this.vel.y,
       swim: this.swimming ? 1 : 0, land: this.landStrength * (this.landTimer / 0.35),
-      action: actionEnvelope, actionKind
+      action: actionEnvelope, actionKind, aim: this.aim, jet: this.jetting ? 1 : 0
     });
     if (this.grounded && horizontal > 0.5) {
       const crossed = Math.floor(stride / Math.PI) !== Math.floor(this.stepPhaseLast / Math.PI);
       if (crossed) this.events.push({ type: 'step', surface: this.surface, sprint: wantsSprint });
     }
     this.stepPhaseLast = stride;
+  }
+
+  /** Fills the jetpack (bases, refuelling). */
+  refuel() {
+    this.jetFuel = JET_FUEL;
   }
 
   bob(dt) {

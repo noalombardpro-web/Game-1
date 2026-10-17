@@ -78,6 +78,8 @@ export class UI {
     $('sp-near').textContent = `${h.nearest} ${km(h.altitude)}`;
     $('space-prompts').innerHTML = h.prompts.map((p) => `<div>${esc(p)}</div>`).join('');
     $('nav-markers').innerHTML = h.markers.map((m) => `<span class="navm ${m.selected ? 'selected' : ''} ${m.onScreen ? '' : 'edge'}" style="left:${m.left.toFixed(1)}%;top:${m.top.toFixed(1)}%">${esc(m.name)} · ${km(m.distance)}</span>`).join('');
+    this.updateGear(s.gear, !!s.vehicle);
+
     this.damageAlpha = Math.max(0, this.damageAlpha - dt * 1.2);
     $('damage').style.opacity = this.damageAlpha.toFixed(3);
     const perf = $('perf');
@@ -177,6 +179,8 @@ export class UI {
       $('vehicle-hull').style.color = v.hull < 30 ? '#ff5d5d' : '';
     }
 
+    this.updateGear(s.gear, !!s.vehicle);
+
     this.damageAlpha = Math.max(0, this.damageAlpha - dt * 1.2);
     $('damage').style.opacity = this.damageAlpha.toFixed(3);
     this.drawRadar(s);
@@ -189,6 +193,34 @@ export class UI {
         + `draw ${p.drawCalls} · tris ${(p.triangles / 1000).toFixed(0)}k · géom. ${p.geometries} · tex. ${p.textures}\n`
         + `CPU jeu ${p.updateMs.toFixed(1)} ms · soumission rendu ${p.renderMs.toFixed(1)} ms\n`
         + `chunks ${s.chunks} · faune ${s.creatures} (vues ${s.views}) · ennemis ${s.enemies}`;
+    }
+  }
+
+  /** Weapon hotbar, ammunition, jetpack fuel, building bar and sniper scope. */
+  updateGear(g, inVehicle) {
+    $('gear').classList.toggle('hidden', !g || inVehicle);
+    if (!g || inVehicle) return;
+    $('jet-fill').style.width = `${g.jet.toFixed(0)}%`;
+    $('jet').style.opacity = g.jet < 99 || g.jetting ? '1' : '0.45';
+    $('scope').classList.toggle('hidden', !g.zoomed);
+    const ammo = $('ammo');
+    ammo.classList.toggle('hidden', !g.weapon || !!g.grid);
+    if (g.weapon) {
+      $('ammo-name').textContent = g.weapon.name;
+      $('ammo-count').textContent = g.weapon.mag === null ? '' : g.weapon.reloading ? 'Rechargement…' : `${g.weapon.mag} / ${g.weapon.magSize} · ${g.weapon.reserve}`;
+      ammo.classList.toggle('reloading', g.weapon.reloading);
+    }
+    let html;
+    if (g.grid) {
+      html = g.grid.pieces.map((p) => `<div class="slot ${p.active ? 'active' : ''}">${p.n} · ${p.name}</div>`).join('')
+        + g.grid.materials.map((m) => `<div class="slot ${m.active ? 'active' : ''}">${m.name}<small>${m.count}</small></div>`).join('');
+    } else {
+      html = `<div class="slot ${g.harvestActive ? 'active' : ''}">0 · Récolte</div>`
+        + g.slots.map((w) => `<div class="slot ${w.active ? 'active' : ''} ${w.owned ? '' : 'locked'}">${w.n} · ${w.name}</div>`).join('');
+    }
+    if (html !== this.lastHotbar) {
+      this.lastHotbar = html;
+      $('hotbar').innerHTML = html;
     }
   }
 
@@ -280,11 +312,12 @@ export class UI {
       pause: () => this.pauseHtml(d),
       build: () => this.buildHtml(d),
       station: () => this.stationHtml(d),
-      structure: () => this.structureHtml(d)
+      structure: () => this.structureHtml(d),
+      wardrobe: () => this.wardrobeHtml(d)
     };
     const titles = {
       inventory: 'Inventaire & fabrication', map: 'Carte', journal: 'Journal de mission', codex: 'Codex', settings: 'Paramètres', pause: 'Pause',
-      build: 'Construction', station: 'Station Aurore', structure: d.structure ? d.structure.def.name : 'Structure'
+      build: 'Construction', station: 'Station Aurore', wardrobe: 'Garde-robe', structure: d.structure ? d.structure.def.name : 'Structure'
     };
     const content = renderers[name]();
     root.innerHTML = `<div class="sheet"><header><h2>${titles[name]}</h2><button data-action="close" class="ghost">Fermer (Échap)</button></header>${content}</div>`;
@@ -493,12 +526,25 @@ export class UI {
     return `${body}<div class="stack">${buttons.join('')}</div>`;
   }
 
+  wardrobeHtml(d) {
+    const skins = d.content.skins.skins;
+    const current = d.settings.skin ?? d.content.skins.default;
+    const cards = skins.map((k) => {
+      const colours = Object.values({ ...(k.tints ?? {}), ...(k.colors ?? {}) });
+      const sw = colours.length ? colours.map((c) => `<i style="background:${esc(c)}"></i>`).join('') : '<i style="background:#8a8f7a"></i>';
+      const model = { soldier: 'Soldat', explorer: 'Exploratrice', michelle: 'Civile' }[k.model] ?? k.model;
+      return `<button data-action="skin" data-value="${k.id}" class="${k.id === current ? 'active' : ''}"><b>${esc(k.name)}</b><small class="muted">${model}${k.id === current ? ' · porté' : ''}</small><span class="swatches">${sw}</span></button>`;
+    }).join('');
+    return `<p class="muted">Toutes les tenues sont disponibles. Changez de vue avec V (1re / 3e personne).</p><div class="skins">${cards}</div>`;
+  }
+
   pauseHtml(d) {
     return `<div class="stack">
       <button data-action="resume">Reprendre</button>
       <button data-action="save">Sauvegarder${d.lastSave ? ` (${esc(d.lastSave)})` : ''}</button>
       <button data-action="load" ${d.hasSave ? '' : 'disabled'}>Charger la dernière sauvegarde</button>
       <button data-action="open" data-value="settings">Paramètres</button>
+      <button data-action="open" data-value="wardrobe">Garde-robe (O)</button>
       <button data-action="quit">Retour au menu principal</button>
     </div>
     <p class="muted">Sauvegarde automatique toutes les 90 secondes. Une écriture interrompue n'altère jamais la sauvegarde précédente.</p>`;

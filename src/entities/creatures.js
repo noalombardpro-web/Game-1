@@ -5,7 +5,7 @@
 import { canSee, canHear } from '../ai/perception.js';
 import { chooseHeading, angleDelta } from '../ai/navigation.js';
 import { WATER_LEVEL } from '../world/terrain.js';
-import { createCreatureView } from './creatureModels.js';
+import { createCreatureView, createModelView } from './creatureModels.js';
 import { clamp } from '../core/math.js';
 import { createRng, seedFromString } from '../core/rng.js';
 
@@ -655,7 +655,7 @@ export class CreatureManager {
   }
 
   addView(creature, scene) {
-    creature.view = createCreatureView(creature.species, creature.traits);
+    creature.view = createModelView(creature.species, creature.traits) ?? createCreatureView(creature.species, creature.traits);
     creature.view.root.userData.creature = creature;
     scene.add(creature.view.root);
     this.activeViews++;

@@ -1,6 +1,6 @@
 // Turns chunk data (typed arrays from the worker) into three.js objects.
 import * as THREE from 'three';
-import { VEG_STRIDE } from './chunkGenerator.js';
+import { VEG_STRIDE, SURFACE_STRIDE } from './chunkGenerator.js';
 import { resourceVisual } from './vegetationAssets.js';
 
 const SKIRT_DEPTH = 14;
@@ -8,7 +8,7 @@ const UV_SCALE = 1 / 24;
 
 /** Terrain surface with skirts hanging below the edges, which hides LOD seams. */
 export function buildTerrainGeometry(payload) {
-  const { n, step, origin, heights, normals, colors } = payload;
+  const { n, step, origin, heights, normals, colors, surface } = payload;
   const side = n + 1;
   const topCount = side * side;
   const skirtBase = topCount;
@@ -17,6 +17,14 @@ export function buildTerrainGeometry(payload) {
   const norms = new Float32Array(total * 3);
   const cols = new Float32Array(total * 3);
   const uvs = new Float32Array(total * 2);
+  const surfA = new Float32Array(total * 4);
+  const surfB = new Float32Array(total * 4);
+  const copySurface = (k, src) => {
+    for (let l = 0; l < 4; l++) {
+      surfA[k * 4 + l] = surface ? surface[src * SURFACE_STRIDE + l] : l === 0 ? 1 : 0;
+      surfB[k * 4 + l] = surface ? surface[src * SURFACE_STRIDE + 4 + l] : 0;
+    }
+  };
 
   for (let j = 0; j < side; j++) {
     for (let i = 0; i < side; i++) {
@@ -24,6 +32,7 @@ export function buildTerrainGeometry(payload) {
       const x = origin[0] + i * step;
       const z = origin[1] + j * step;
       setVertex(k, x, heights[k], z, normals, colors, positions, norms, cols, uvs);
+      copySurface(k, k);
     }
   }
   // Skirt vertices: one per top-edge vertex, dropped straight down.
@@ -39,6 +48,7 @@ export function buildTerrainGeometry(payload) {
       const top = indexOf(t);
       const s = skirtBase + e * side + t;
       setVertex(s, positions[top * 3], heights[top] - SKIRT_DEPTH, positions[top * 3 + 2], normals, colors, positions, norms, cols, uvs, top);
+      copySurface(s, top);
       edgeMeta.push(s);
     }
   });
@@ -68,6 +78,8 @@ export function buildTerrainGeometry(payload) {
   geometry.setAttribute('normal', new THREE.BufferAttribute(norms, 3));
   geometry.setAttribute('color', new THREE.BufferAttribute(cols, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.setAttribute('surfA', new THREE.BufferAttribute(surfA, 4));
+  geometry.setAttribute('surfB', new THREE.BufferAttribute(surfB, 4));
   geometry.setIndex(indices);
   geometry.computeBoundingSphere();
   return geometry;

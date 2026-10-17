@@ -82,3 +82,16 @@ comportement dynamique (IA, météo) utilise `Math.random` ou un RNG de session 
 - `src/space/` : `SpaceSession` (scène spatiale séparée, modèle de vol, corps célestes, collisions, minage).
 - `Game.buildGlobals / buildWorld(planetId)` : état partagé vs monde propre à une planète ; les états des
   planètes quittées sont gardés dans `planetStates` et sauvegardés.
+
+## Personnage, armes, construction
+
+- `src/entities/modelLibrary.js` charge les glTF de `public/assets/models` (préchargés au démarrage).
+- `src/entities/characterModel.js` : modèle Mixamo, mélange des clips repos / marche / course, poses
+  procédurales en espace monde (visée, accroupi, saut, nage) ; orientation lue sur le squelette.
+- `src/systems/weapons.js` (logique pure, testée) et `src/app/arsenal.js` (méthodes ajoutées à `Game` :
+  tir, roquettes, récolte, vue 1re personne, construction et édition).
+- `src/building/pieces.js` (logique pure, testée : grille, coûts, surfaces praticables, collisions,
+  effondrement) et `pieceMeshes.js` (rendu). Le monde consulte la grille via `world.groundAt`,
+  `world.ceilingAt` et `world.resolveCollisions`.
+- Terrain : `materials.js` mélange 7 textures selon des poids par sommet (`surfA`, `surfB`) calculés
+  par `chunkGenerator.js` à partir du champ `surface` de chaque biome.

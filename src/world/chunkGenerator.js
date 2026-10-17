@@ -24,6 +24,8 @@ const SCALE_RANGE = {
   shrub: [0.7, 1.3], fern: [0.8, 1.2], grass: [0.8, 1.3], rock: [0.5, 1.6],
   kelp: [0.7, 1.5], coral: [0.7, 1.4], deadtree: [0.8, 1.3], icespike: [0.6, 1.6], spire: [0.8, 1.8], lavarock: [0.5, 1.5]
 };
+/** Harvest kind of solid vegetation: 1 = wood, 2 = stone. */
+const HARVEST_KIND = { pine: 1, broadleaf: 1, palm: 1, cactus: 1, deadtree: 1, rock: 2, icespike: 2, spire: 2, lavarock: 2 };
 const WATER_PLANTS = new Set(['grass', 'fern', 'kelp', 'coral', 'rock']);
 
 /** Converts '#rrggbb' to linear RGB floats. */
@@ -37,6 +39,11 @@ const ROCK = hexToLinear('#6b655c');
 const SNOW = hexToLinear('#eef3f7');
 const MUD = hexToLinear('#2b281f');
 const LAVA = hexToLinear('#ff5a14');
+
+/** Terrain texture layers, in the order of the `surface` vertex weights (8 per vertex, last unused). */
+export const SURFACE_LAYERS = ['grass', 'dirt', 'sand', 'snow', 'dry', 'lava', 'rock'];
+export const SURFACE_STRIDE = 8;
+const LAYER_INDEX = Object.fromEntries(SURFACE_LAYERS.map((id, i) => [id, i]));
 
 /**
  * @param terrain  object returned by createTerrain
@@ -58,6 +65,7 @@ export function generateChunk(terrain, content, req) {
   const colors = new Float32Array(count * 3);
   const biomeIds = new Uint8Array(count);
   const volcano = new Float32Array(count);
+  const surface = new Float32Array(count * SURFACE_STRIDE);
   const biomes = content.biomes;
 
   // Pass 1: heights and biome per vertex.
@@ -102,24 +110,34 @@ export function generateChunk(terrain, content, req) {
       r += (ROCK[0] - r) * rock;
       g += (ROCK[1] - g) * rock;
       b += (ROCK[2] - b) * rock;
+      const w = k * SURFACE_STRIDE;
+      for (const [layer, amount] of Object.entries(biome.surface ?? { grass: 1 })) surface[w + LAYER_INDEX[layer]] = amount;
       if (biome.snowLine !== undefined) {
         const snow = smoothstep(biome.snowLine, biome.snowLine + 12, h) * smoothstep(0.6, 0.85, ny);
+        surface[w + 3] += snow * 2;
         r += (SNOW[0] - r) * snow;
         g += (SNOW[1] - g) * snow;
         b += (SNOW[2] - b) * snow;
       }
       if (biome.lava) {
         const glow = smoothstep(0.84, 0.95, volcano[k]);
+        surface[w + 5] += glow * 3;
         r += (LAVA[0] - r) * glow;
         g += (LAVA[1] - g) * glow;
         b += (LAVA[2] - b) * glow;
       }
       if (h < WATER_LEVEL && !biome.marine) {
         const submerged = smoothstep(WATER_LEVEL, WATER_LEVEL - 4, h);
+        surface[w + 1] += submerged * 2;
         r += (MUD[0] - r) * submerged;
         g += (MUD[1] - g) * submerged;
         b += (MUD[2] - b) * submerged;
       }
+      // Steep ground shows bare rock whatever the biome; weights are normalised to sum to 1.
+      surface[w + 6] += rock * 3;
+      let total = 0;
+      for (let l = 0; l < 7; l++) total += surface[w + l];
+      for (let l = 0; l < 7; l++) surface[w + l] /= total || 1;
       colors[k * 3] = r;
       colors[k * 3 + 1] = g;
       colors[k * 3 + 2] = b;
@@ -128,8 +146,8 @@ export function generateChunk(terrain, content, req) {
 
   const result = {
     id: `${cx}:${cz}:${lod}`, cx, cz, lod, n, step, origin: [ox, oz],
-    heights, normals, colors, biomeIds,
-    veg: {}, colliders: new Float32Array(0), resources: [], spawns: []
+    heights, normals, colors, biomeIds, surface,
+    veg: {}, colliders: new Float32Array(0), colliderKinds: new Uint8Array(0), resources: [], spawns: []
   };
   if (lod !== 0) return result;
 
@@ -137,6 +155,7 @@ export function generateChunk(terrain, content, req) {
   const vegetation = populateVegetation(terrain, content, result, rng, density);
   result.veg = vegetation.veg;
   result.colliders = vegetation.colliders;
+  result.colliderKinds = vegetation.colliderKinds;
   result.resources = populateResources(content, result, rng);
   result.spawns = populateFauna(content, result, rng);
   return result;
@@ -154,6 +173,7 @@ function populateVegetation(terrain, content, result, rng, density) {
   const area = (CHUNK_SIZE * CHUNK_SIZE) / CANDIDATES;
   const buckets = {};
   const colliders = [];
+  const kinds = [];
   const biomes = content.biomes;
 
   for (let c = 0; c < CANDIDATES; c++) {
@@ -178,14 +198,17 @@ function populateVegetation(terrain, content, result, rng, density) {
       ];
       (buckets[entry.kind] ??= []).push(...record);
       const radius = COLLIDER_RADIUS[entry.kind];
-      if (radius !== undefined) colliders.push(x, z, radius * record[4]);
+      if (radius !== undefined) {
+        colliders.push(x, z, radius * record[4]);
+        kinds.push(HARVEST_KIND[entry.kind] ?? 0);
+      }
       break;
     }
   }
 
   const veg = {};
   for (const kind of Object.keys(buckets)) veg[kind] = new Float32Array(buckets[kind]);
-  return { veg, colliders: new Float32Array(colliders) };
+  return { veg, colliders: new Float32Array(colliders), colliderKinds: new Uint8Array(kinds) };
 }
 
 function populateResources(content, result, rng) {

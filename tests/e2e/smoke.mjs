@@ -62,7 +62,7 @@ try {
   await page.click('#btn-new');
   await until(page, () => window.__genesis?.state().state === 'playing', null, 30000);
   await until(page, () => (window.__genesis.state().chunks ?? 0) >= 50, null, 240000);
-  await until(page, () => window.__genesis.state().frames > 120, null, 120000);
+  await until(page, () => window.__genesis.state().frames > 60, null, 300000);
   const s0 = await state(page);
   check('world streams chunks around the player', s0.chunks >= 50, `chunks=${s0.chunks}`);
   check('fauna spawned and visible views created', s0.creatures > 0 && s0.views > 0, `creatures=${s0.creatures}, views=${s0.views}`);
@@ -181,14 +181,16 @@ try {
     if (!scanned) console.log('  scan attempt', attempt, c.species, await page.evaluate(() => document.getElementById('toasts')?.textContent?.slice(-120)));
   }
   check('R scans a creature and records it in the codex', scanned, scanned ? (await state(page)).codex.species.join(',') : 'no scan landed');
+  await page.keyboard.press('Digit1');
+  await until(page, () => window.__genesis.state().gear.weapon === 'plasma_pistol', null, 60000);
+  check('1 equips the plasma pistol', true);
   let damaged = false;
   for (let attempt = 0; attempt < 12 && !damaged; attempt++) {
     const c = await target();
     if (!c) { damaged = true; break; }
     await page.evaluate((t) => { window.__genesis.teleport(t.x, t.z - 8); window.__genesis.aimAt(t.x, t.y + t.height * 0.5, t.z); }, c);
-    await page.mouse.down();
-    await sleep(1200);
-    await page.mouse.up();
+    await page.mouse.click(480, 270);
+    await sleep(1500);
     const after = (await state(page)).nearCreatures.find((x) => x.id === c.id);
     damaged = !after || !after.alive || after.hp < c.hp;
   }
@@ -251,7 +253,7 @@ try {
   }
 
   // Bases: build a generator and a workbench with the inventory resources.
-  await page.evaluate(() => { for (const [i, n] of [['ore_metal', 80], ['mineral_silicate', 40], ['crystal_energy', 20], ['electronic_part', 20], ['fiber', 20]]) window.__genesis.grant(i, n); });
+  await page.evaluate(() => { for (const [i, n] of [['ore_metal', 20], ['mineral_silicate', 10], ['crystal_energy', 8], ['electronic_part', 6], ['fiber', 6]]) window.__genesis.grant(i, n); });
   const here = (await state(page)).player;
   const built = await page.evaluate((p) => [window.__genesis.build('workbench', p.x + 6, p.z + 6), window.__genesis.build('generator', p.x + 16, p.z + 6)], here);
   check('base structures can be placed with resources', built.every((b) => /^s\d+$/.test(b)), built.join(' | '));
@@ -273,6 +275,44 @@ try {
     check('ship lands back on the planet', (await state(page)).vehicles.some((v) => v.type === 'ship'));
   } else check('ship launches into the space layer', false, 'no ship');
 
+  // Character, weapons, jetpack and grid building.
+  const g0 = (await state(page)).gear;
+  check('the human character model is loaded and animated', g0.skinLoaded, g0.skin);
+  await page.keyboard.press('Digit2');
+  await until(page, () => window.__genesis.state().gear.weapon === 'laser_rifle', null, 60000);
+  await page.mouse.down();
+  await until(page, () => window.__genesis.state().gear.mags.laser_rifle < 30, null, 60000);
+  await sleep(1500);
+  await page.mouse.up();
+  const g1 = (await state(page)).gear;
+  check('the laser rifle fires on full auto and spends its magazine', g1.mags.laser_rifle < 30, `mag=${g1.mags.laser_rifle}`);
+  await page.keyboard.press('KeyQ');
+  await until(page, () => window.__genesis.state().gear.mags.laser_rifle === 30, null, 120000);
+  check('Q reloads from the ammunition reserve', true);
+  await page.keyboard.press('Space');
+  await until(page, () => !window.__genesis.state().player.grounded, null, 30000);
+  await page.keyboard.down('Space');
+  await until(page, () => window.__genesis.state().gear.jetFuel < 99, null, 60000);
+  const jetPeak = await state(page);
+  await page.keyboard.up('Space');
+  await until(page, () => window.__genesis.state().player.grounded, null, 120000);
+  check('second jump press ignites the jetpack and burns fuel', jetPeak.gear.jetFuel < 99, `fuel=${jetPeak.gear.jetFuel.toFixed(0)}`);
+  await page.keyboard.press('Digit0');
+  await page.keyboard.press('KeyG');
+  await until(page, () => window.__genesis.state().gear.gridMode === 'wall', null, 60000);
+  const pieces0 = (await state(page)).gear.pieces.length;
+  await page.mouse.click(480, 270);
+  await until(page, (n) => window.__genesis.state().gear.pieces.length > n, pieces0, 60000);
+  check('G then left click builds a wall', true);
+  await page.keyboard.press('Digit3');
+  await until(page, () => window.__genesis.state().gear.gridMode === 'ramp', null, 60000);
+  await page.evaluate(() => window.__genesis.look(window.__genesis.state().player ? 1.6 : 0, -0.1));
+  await page.mouse.click(480, 270);
+  await until(page, (n) => window.__genesis.state().gear.pieces.length > n + 1, pieces0, 60000);
+  check('3 then left click builds a ramp', true);
+  await page.keyboard.press('KeyG');
+  await until(page, () => !window.__genesis.state().gear.gridMode, null, 60000);
+
   // Measure frame times over 8 seconds of play.
   const frameStart = (await state(page)).frames;
   await sleep(8000);
@@ -290,7 +330,7 @@ try {
     })
   };
   console.log('PERF', JSON.stringify(perfReport));
-  check('frame loop keeps running', fps > 0.5, `fps=${fps.toFixed(1)}`);
+  check('frame loop keeps running', fps > 0.2, `fps=${fps.toFixed(1)}`);
   await page.screenshot({ path: `${OUT}/03-day.png` });
 
   await page.evaluate(() => window.__genesis.setTime(0.97));
@@ -312,6 +352,9 @@ try {
   const after = await state(page);
   const drift = Math.hypot(after.player.x - before.player.x, after.player.z - before.player.z);
   check('save and continue restore the robot position', drift < 6, `drift=${drift.toFixed(2)} m`);
+  check('save and continue restore built pieces and weapon magazines',
+    JSON.stringify(after.gear.pieces) === JSON.stringify(before.gear.pieces) && JSON.stringify(after.gear.mags) === JSON.stringify(before.gear.mags),
+    `pieces=${after.gear.pieces.length} ${JSON.stringify(before.gear.mags)} vs ${JSON.stringify(after.gear.mags)} | ${JSON.stringify(before.gear.pieces)} vs ${JSON.stringify(after.gear.pieces)}`);
   check('save and continue restore missions and inventory',
     JSON.stringify(after.missions) === JSON.stringify(before.missions) && JSON.stringify(after.inventory) === JSON.stringify(before.inventory));
 

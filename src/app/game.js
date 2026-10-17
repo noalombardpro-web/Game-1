@@ -8,7 +8,7 @@ import { World } from '../world/world.js';
 import { Environment } from '../world/environment.js';
 import { Weather, WeatherParticles } from '../world/weather.js';
 import { createVegetationAssets } from '../world/vegetationAssets.js';
-import { createWindUniforms, createDetailTexture, createTerrainMaterial } from '../world/materials.js';
+import { createWindUniforms, createDetailTexture, createTerrainMaterial, setTerrainQuality } from '../world/materials.js';
 import { placePoints, buildPointVisual, containerId } from '../world/pois.js';
 import { Player } from '../entities/player.js';
 import { CameraRig } from '../entities/cameraRig.js';
@@ -30,16 +30,15 @@ import { loadSettings, saveSettings, QUALITY_PRESETS } from './settings.js';
 import { GameAudio } from '../audio/audio.js';
 import { Profiler } from '../perf/profiler.js';
 import { UI } from '../ui/ui.js';
+import { arsenalMethods } from './arsenal.js';
+import { preloadModels } from '../entities/modelLibrary.js';
 
 const SIM_STEP = 1 / 30;
 const SIM_MAX_FRAME = 0.25;
 const AUTOSAVE_SECONDS = 90;
 const INTERACT_RANGE = 3.2;
 const SCAN_RANGE = 45;
-const BOLT_RANGE = 70;
-const BOLT_COOLDOWN = 0.35;
-const WEAPON = { creature: 35, enemy: 40 };
-const PANEL_KEYS = { inventory: 'inventory', map: 'map', journal: 'journal', codex: 'codex', build: 'build' };
+const PANEL_KEYS = { inventory: 'inventory', map: 'map', journal: 'journal', codex: 'codex', build: 'build', wardrobe: 'wardrobe' };
 const DAY_MINUTES = 24 * 60;
 
 const dist2d = (ax, az, bx, bz) => Math.hypot(ax - bx, az - bz);
@@ -70,7 +69,6 @@ export class Game {
     this.lastSaveText = null;
     this.logEntries = [];
     this.shotNoise = 0;
-    this.weaponCooldown = 0;
     this.autosaveTimer = AUTOSAVE_SECONDS;
     this.biomeCache = { key: '', id: '' };
 
@@ -90,6 +88,7 @@ export class Game {
     this.assets = createVegetationAssets(this.windUniforms);
     this.detailTexture = createDetailTexture();
     this.terrainMaterial = createTerrainMaterial(this.detailTexture);
+    setTerrainQuality(this.terrainMaterial, this.settings.quality);
     this.resize();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('beforeunload', () => { if (this.state === 'playing') this.save(true); });
@@ -102,6 +101,7 @@ export class Game {
     });
     this.last = performance.now();
     this.exposeDebugApi();
+    preloadModels();
     requestAnimationFrame((t) => this.frame(t));
     this.ui.showStart(this.saves.hasSave);
   }
@@ -120,6 +120,8 @@ export class Game {
       state: () => this.debugState(),
       teleport: (x, z) => this.player && this.player.spawnAt(x, z),
       setTime: (t) => this.environment?.setTime(t),
+      setView: (mode, distance) => { if (this.rig) { this.rig.mode = mode; if (distance) this.rig.distance = distance; } },
+      look: (yaw, pitch) => { if (this.rig) { this.rig.yaw = yaw; this.rig.pitch = pitch; } },
       perf: () => this.profiler.snapshot(),
       grant: (id, n) => this.inventory?.add(id, n),
       aimAt: (x, y, z) => this.rig?.aimAt(x, y, z),
@@ -178,7 +180,12 @@ export class Game {
         id: c.id, species: c.species.id, x: c.x, y: c.y, z: c.z, hp: c.hp, alive: c.alive, height: c.species.size.height
       })),
       inventory: this.inventory.toJSON(),
-      codex: { species: [...this.codex.species], points: [...this.codex.points] }
+      codex: { species: [...this.codex.species], points: [...this.codex.points] },
+      gear: {
+        weapon: this.weapons.current, mags: { ...this.weapons.mags }, reloading: this.weapons.reloading > 0,
+        jetFuel: this.player.jetFuel, jetting: this.player.jetting, gridMode: this.gridMode?.type ?? null, editing: !!this.editing,
+        pieces: this.grid.toJSON(), skin: this.skinDef().id, skinLoaded: !!this.player.model.mixer, firstPerson: this.rig.mode === 'first'
+      }
     };
   }
 
@@ -209,6 +216,7 @@ export class Game {
     this.buildWorld(data?.planet ?? 'genesis', data);
     this.missions.skipMissing(this.knownPointIds());
     this.state = 'playing';
+    this.input.reset();
     this.ui.showGame();
     this.audio.ensure();
     this.lastSaveText = data?.savedAt ? new Date(data.savedAt).toLocaleTimeString('fr-FR') : null;
@@ -231,6 +239,7 @@ export class Game {
     this.logEntries = [];
     this.dynamicPoints = [];
     this.eventTimer = 120 + Math.random() * 120;
+    this.initArsenal(data);
   }
 
   planetSeed(planetId) {
@@ -323,6 +332,7 @@ export class Game {
     this.autosaveTimer = AUTOSAVE_SECONDS;
     if (s?.clock) this.environment.setTime(s.clock.timeOfDay);
     this.interior = null;
+    this.initArsenalWorld(s);
   }
 
   capturePointer() {
@@ -382,7 +392,11 @@ export class Game {
   handleMenuKeys() {
     if (this.state === 'start') return;
     if (this.input.pressed('menu')) {
-      if (this.buildMode) {
+      if (this.editing) {
+        this.exitEdit();
+      } else if (this.gridMode) {
+        this.exitGridMode();
+      } else if (this.buildMode) {
         this.cancelBuild();
       } else if (this.ui.panel) {
         this.onAction('close');
@@ -462,7 +476,6 @@ export class Game {
     });
     this.playerTarget.x = player.pos.x;
     this.playerTarget.z = player.pos.z;
-    this.weaponCooldown -= dt;
     this.shotNoise = Math.max(0, this.shotNoise - dt);
     this.autosaveTimer -= dt;
 
@@ -472,7 +485,7 @@ export class Game {
     if (this.input.pressed('interact')) this.interact();
     if (this.input.pressed('scan')) this.scan();
     if (this.input.pressed('use')) this.useConsumable();
-    if (this.input.isDown('fire')) this.fire();
+    this.updateArsenal(dt);
 
     const mounted = this.mounted;
     const env = { windX: this.weather.wind.x, windZ: this.weather.wind.y, windStrength: this.weather.windStrength, storm: this.weather.current.storm };
@@ -551,7 +564,8 @@ export class Game {
 
     const target = mounted
       ? { x: mounted.x, y: mounted.y, z: mounted.z, height: mounted.cfg.camera.height, distance: mounted.cfg.camera.distance, forceThird: !mounted.cfg.fpv }
-      : { x: player.pos.x, y: player.pos.y, z: player.pos.z, height: player.crouched ? 1.0 : 1.5 };
+      : { x: player.pos.x, y: player.pos.y, z: player.pos.z, height: this.rig.mode === 'first' ? (player.crouched ? 1.08 : 1.64) : (player.crouched ? 1.0 : 1.5) };
+    this.pieceRenderer.sync(this.grid);
     this.rig.update(dt, target, (x, z) => this.world.heightAt(x, z));
     this.ui.setCockpit(!!mounted?.cfg.cockpit && this.rig.mode === 'first');
     if (mounted?.typeId === 'ship' && mounted.altitude > 1400) this.launchToSpace(mounted);
@@ -585,7 +599,7 @@ export class Game {
     this.robot.integrity = 45;
     this.robot.energy = Math.max(this.robot.energy, 35);
     this.player.spawnAt(this.checkpoint.x, this.checkpoint.z);
-    this.ui.toast('Robot réactivé au dernier point sûr. Intégrité partielle.', 'danger');
+    this.ui.toast('Vous vous réveillez au dernier point sûr, blessé.', 'danger');
   }
 
   // ---- Player actions ----------------------------------------------------
@@ -678,54 +692,6 @@ export class Game {
     this.player.yaw = vehicle.yaw;
     this.player.spawnAt(at.x, at.z);
     this.player.model.root.visible = true;
-  }
-
-  /** Fires the robot's plasma weapon (auto-fire while held, with a cooldown). */
-  fire() {
-    if (this.buildMode || this.weaponCooldown > 0 || this.robot.destroyed) return;
-    if (this.robot.tool <= 0) {
-      this.ui.toast('Arme hors service : réparez vos outils.', 'danger');
-      this.weaponCooldown = 1;
-      return;
-    }
-    if (!this.robot.spend(1)) return;
-    this.robot.wear(0.35 * this.inventory.effects.toolWear);
-    this.weaponCooldown = BOLT_COOLDOWN;
-    this.shotNoise = 0.9;
-    this.audio.playShot();
-    const origin = this.rig.camera.position.clone();
-    const dir = this.rig.forward();
-    const gun = { x: this.player.pos.x + dir.x * 0.6, y: this.player.pos.y + 1.2, z: this.player.pos.z + dir.z * 0.6 };
-    const terrainT = rayTerrain(this.world, origin, dir, BOLT_RANGE, 1);
-    let hit = null;
-    for (const c of this.creatures.near(origin.x, origin.z, BOLT_RANGE)) {
-      const t = raySphere(origin, dir, { x: c.x, y: c.y + c.species.size.height * 0.5, z: c.z }, c.species.size.length * 0.5 + 0.3);
-      if (t !== null && t < terrainT && (!hit || t < hit.t)) hit = { t, kind: 'creature', obj: c };
-    }
-    for (const e of this.enemies.enemies) {
-      if (!e.alive) continue;
-      const t = raySphere(origin, dir, { x: e.x, y: e.y, z: e.z }, 1.0);
-      if (t !== null && t < terrainT && (!hit || t < hit.t)) hit = { t, kind: 'enemy', obj: e };
-    }
-    const endT = hit ? hit.t : terrainT;
-    const end = { x: origin.x + dir.x * endT, y: origin.y + dir.y * endT, z: origin.z + dir.z * endT };
-    this.effects.beam(gun, end, '#7fe9ff', 0.09);
-    if (!hit) {
-      this.effects.burst(end, '#7fe9ff', 0.4, 0.25);
-      return;
-    }
-    if (hit.kind === 'creature') {
-      const c = hit.obj;
-      if (c.takeDamage(WEAPON.creature * this.robot.toolEfficiency, this.playerTarget)) {
-        this.handleNotices(this.missions.notify({ type: 'kill', species: c.species.id }));
-        this.grant('bio_sample', 1 + this.inventory.effects.lootBonus);
-        this.ui.toast(`${c.species.name} neutralisé : matériau biologique récupéré.`, 'good');
-      }
-    } else if (this.enemies.hit(hit.obj, WEAPON.enemy * this.robot.toolEfficiency)) {
-      this.handleNotices(this.missions.notify({ type: 'destroy', kind: hit.obj.kind }));
-      this.ui.toast(`${hit.obj.name} détruit.`, 'good');
-      this.grant('ore_metal', 1);
-    }
   }
 
   useConsumable() {
@@ -984,6 +950,12 @@ export class Game {
     } else {
       prompt = `[E] Descendre : ${this.mounted.name}`;
     }
+    if (this.gridMode) {
+      prompt = this.editing ? 'Édition — clic gauche : case · clic droit : réinitialiser · H : valider'
+        : `${this.gridMode.valid ? 'Clic gauche : construire' : this.gridMode.reason} · clic droit : matériau · H : éditer`;
+    } else if (this.editing) {
+      prompt = 'Édition — clic gauche : case · clic droit : réinitialiser · H : valider';
+    }
     if (this.buildMode) {
       const def = this.content.structures.structures[this.buildMode.type];
       prompt = `${def.name} — ${this.buildMode.valid ? 'clic gauche : poser' : this.buildMode.reason}`;
@@ -1033,7 +1005,8 @@ export class Game {
       chunks: this.world.loadedCount,
       creatures: this.creatures.count,
       views: this.creatures.activeViews,
-      enemies: this.enemies.enemies.length
+      enemies: this.enemies.enemies.length,
+      gear: this.arsenalHud()
     };
   }
 
@@ -1056,6 +1029,8 @@ export class Game {
       structures: this.bases.toJSON(),
       collected: [...this.world.collected],
       vehicles: this.vehicles.toJSON(),
+      grid: this.grid.toJSON(),
+      weapons: this.weapons.toJSON(),
       clock: { timeOfDay: this.environment.timeOfDay }
     };
   }
@@ -1085,6 +1060,7 @@ export class Game {
       checkpoint: this.checkpoint,
       vehicles: this.vehicles.toJSON(),
       structures: this.bases.toJSON(),
+      grid: this.grid.toJSON(),
       collected: [...this.world.collected]
     };
   }
@@ -1204,7 +1180,7 @@ export class Game {
     this.ui.flash('#ff3030');
     this.robot.integrity = Math.max(40, this.robot.integrity);
     this.player.spawnAt(this.checkpoint.x, this.checkpoint.z);
-    this.ui.toast(`Le vaisseau est détruit. Vous êtes réactivé au dernier point sûr de ${this.planetDef(planet).name}. Reconstruisez un vaisseau sur la plateforme.`, 'danger');
+    this.ui.toast(`Le vaisseau est détruit. Vous vous réveillez au dernier point sûr de ${this.planetDef(planet).name}. Reconstruisez un vaisseau sur la plateforme.`, 'danger');
   }
 
   onSpaceEvent(e) {
@@ -1306,6 +1282,7 @@ export class Game {
   // ---- Bases and building -----------------------------------------------
 
   startBuild(typeId) {
+    if (this.gridMode) this.exitGridMode();
     this.ui.closePanel();
     if (this.state === 'panel') this.state = 'playing';
     this.buildMode = { type: typeId, yaw: this.rig.yaw, valid: false, x: 0, z: 0 };
@@ -1381,6 +1358,7 @@ export class Game {
     this.robot.repair(100);
     this.robot.recharge(100);
     this.robot.repairTools(100);
+    this.player.refuel();
     this.environment.setTime(this.environment.timeOfDay + 4 / 24);
     this.save(false);
     this.ui.toast('Repos terminé : intégrité, énergie et outils restaurés. Partie sauvegardée.', 'good');
@@ -1464,6 +1442,7 @@ export class Game {
     this.quality = q;
     this.resize();
     this.environment?.setShadowMap(q.shadowMap);
+    setTerrainQuality(this.terrainMaterial, this.settings.quality);
     if (this.world) this.world.setQuality({ viewRadius: q.viewRadius, vegDensity: q.vegDensity });
   }
 
@@ -1480,12 +1459,14 @@ export class Game {
         return;
       case 'close':
         this.ui.closePanel();
+        this.input.reset();
         if (this.state === 'start') return;
         if (this.state === 'panel' || this.state === 'paused') this.state = 'playing';
         this.capturePointer();
         return;
       case 'resume':
         this.ui.closePanel();
+        this.input.reset();
         this.state = 'playing';
         this.capturePointer();
         return;
@@ -1518,6 +1499,9 @@ export class Game {
         return;
       case 'rest':
         this.rest();
+        return;
+      case 'skin':
+        this.setSkin(payload);
         return;
       case 'build-ship':
         this.buildShip();
@@ -1627,3 +1611,5 @@ export class Game {
   }
 }
 
+
+Object.assign(Game.prototype, arsenalMethods);

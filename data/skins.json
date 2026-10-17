@@ -1,0 +1,18 @@
+{
+  "_comment": "Wardrobe: every skin is free to pick (Échap > Garde-robe or key O). model = glTF in public/assets/models; tints = material name -> colour multiplier.",
+  "default": "soldier_std",
+  "skins": [
+    { "id": "soldier_std", "name": "Soldat Vanguard", "model": "soldier", "height": 1.8, "tints": {} },
+    { "id": "soldier_desert", "name": "Vanguard désert", "model": "soldier", "height": 1.8, "tints": { "VanguardBodyMat": "#e6cf9e" } },
+    { "id": "soldier_forest", "name": "Vanguard forêt", "model": "soldier", "height": 1.8, "tints": { "VanguardBodyMat": "#93b07c" } },
+    { "id": "soldier_arctic", "name": "Vanguard arctique", "model": "soldier", "height": 1.8, "tints": { "VanguardBodyMat": "#f2f6fb", "Vanguard_VisorMat": "#9fd8ff" } },
+    { "id": "soldier_night", "name": "Opérateur nocturne", "model": "soldier", "height": 1.8, "tints": { "VanguardBodyMat": "#545a68", "Vanguard_VisorMat": "#ff5544" } },
+    { "id": "soldier_red", "name": "Élite écarlate", "model": "soldier", "height": 1.8, "tints": { "VanguardBodyMat": "#dd7d6c", "Vanguard_VisorMat": "#ffd166" } },
+    { "id": "explorer", "name": "Exploratrice", "model": "explorer", "height": 1.7, "tints": {} },
+    { "id": "explorer_ranger", "name": "Exploratrice ranger", "model": "explorer", "height": 1.7, "colors": { "T-shirt": "#56703a", "short": "#3d3c2c", "hair": "#2a1a10" } },
+    { "id": "explorer_neon", "name": "Exploratrice néon", "model": "explorer", "height": 1.7, "colors": { "T-shirt": "#ff3fa4", "short": "#2f3cff", "hair": "#ffd84a" } },
+    { "id": "explorer_sand", "name": "Exploratrice des sables", "model": "explorer", "height": 1.7, "colors": { "T-shirt": "#ecd9ae", "short": "#8a6a3f", "hair": "#6b3d1f" } },
+    { "id": "civilian", "name": "Civile", "model": "michelle", "height": 1.7, "tints": {} },
+    { "id": "civilian_blue", "name": "Civile (tenue bleue)", "model": "michelle", "height": 1.7, "tints": { "Ch03_Body": "#a9c2ff" } }
+  ]
+}

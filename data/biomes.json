@@ -1,855 +1,1113 @@
 {
- "_comment": "Biomes are evaluated in array order (first match wins). Conditions: minAlt/maxAlt (m), minTemp/maxTemp (degC), minMoist/maxMoist (0..1). The last entry is the fallback. Densities are instances per m2 at LOD0.",
- "biomes": [
-  {
-   "id": "abyss",
-   "name": "Océan profond",
-   "when": {
-    "maxAlt": -30
-   },
-   "ground": "#12202c",
-   "wet": true,
-   "vegetation": [],
-   "resources": {
-    "expected": 1.4,
-    "table": {
-     "mineral_silicate": 2,
-     "ore_metal": 2,
-     "alien_sample": 1,
-     "deep_pearl": 2
+  "_comment": "Biomes are evaluated in array order (first match wins). Conditions: minAlt/maxAlt (m), minTemp/maxTemp (degC), minMoist/maxMoist (0..1). The last entry is the fallback. Densities are instances per m2 at LOD0.",
+  "biomes": [
+    {
+      "id": "freshwater_lake",
+      "name": "Lac d'eau douce",
+      "when": {
+        "minLake": 0.35,
+        "maxAlt": 5.5
+      },
+      "ground": "#4a5a46",
+      "wet": true,
+      "marine": true,
+      "vegetation": [
+        {
+          "kind": "kelp",
+          "perM2": 0.004,
+          "variants": 2
+        },
+        {
+          "kind": "rock",
+          "perM2": 0.002,
+          "variants": 3
+        },
+        {
+          "kind": "grass",
+          "perM2": 0.01
+        }
+      ],
+      "resources": {
+        "expected": 0.8,
+        "table": {
+          "mineral_silicate": 2,
+          "bio_sample": 2,
+          "deep_pearl": 0.3
+        }
+      },
+      "animals": [
+        {
+          "species": "trout",
+          "weight": 3
+        },
+        {
+          "species": "hydrolepis",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "clear",
+        "fog",
+        "cloudy",
+        "rain"
+      ],
+      "hazard": "Eau douce et froide : nage possible, profondeur modérée.",
+      "surface": {
+        "dirt": 0.6,
+        "sand": 0.4
+      }
+    },
+    {
+      "id": "abyss",
+      "name": "Océan profond",
+      "when": {
+        "maxAlt": -30
+      },
+      "ground": "#12202c",
+      "wet": true,
+      "vegetation": [],
+      "resources": {
+        "expected": 1.4,
+        "table": {
+          "mineral_silicate": 2,
+          "ore_metal": 2,
+          "alien_sample": 1,
+          "deep_pearl": 2
+        }
+      },
+      "animals": [
+        {
+          "species": "angler",
+          "weight": 2
+        },
+        {
+          "species": "manta",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "cloudy",
+        "storm",
+        "fog"
+      ],
+      "hazard": "Obscurité totale et forte pression : équipement de plongée profond requis.",
+      "marine": true,
+      "surface": {
+        "sand": 0.6,
+        "rock": 0.4
+      }
+    },
+    {
+      "id": "kelp_forest",
+      "name": "Forêt de kelp",
+      "when": {
+        "maxAlt": -4,
+        "maxTemp": 15
+      },
+      "ground": "#33442f",
+      "wet": true,
+      "vegetation": [
+        {
+          "kind": "kelp",
+          "perM2": 0.012
+        },
+        {
+          "kind": "grass",
+          "perM2": 0.02
+        }
+      ],
+      "resources": {
+        "expected": 1.5,
+        "table": {
+          "bio_sample": 3,
+          "mineral_silicate": 1,
+          "fiber": 3
+        }
+      },
+      "animals": [
+        {
+          "species": "shoal",
+          "weight": 3
+        },
+        {
+          "species": "reefshark",
+          "weight": 1
+        },
+        {
+          "species": "manta",
+          "weight": 1
+        },
+        {
+          "species": "dolphin",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "cloudy",
+        "rain",
+        "fog"
+      ],
+      "hazard": "Courants et prédateurs marins.",
+      "marine": true,
+      "surface": {
+        "sand": 0.7,
+        "dirt": 0.3
+      }
+    },
+    {
+      "id": "coral_reef",
+      "name": "Récif corallien",
+      "when": {
+        "maxAlt": -4,
+        "minTemp": 15
+      },
+      "ground": "#cdbb98",
+      "wet": true,
+      "vegetation": [
+        {
+          "kind": "coral",
+          "perM2": 0.01
+        },
+        {
+          "kind": "kelp",
+          "perM2": 0.002
+        },
+        {
+          "kind": "grass",
+          "perM2": 0.02
+        }
+      ],
+      "resources": {
+        "expected": 1.8,
+        "table": {
+          "bio_sample": 2,
+          "mineral_silicate": 2,
+          "crystal_energy": 1,
+          "deep_pearl": 0.4,
+          "fiber": 1
+        }
+      },
+      "animals": [
+        {
+          "species": "shoal",
+          "weight": 3
+        },
+        {
+          "species": "reefshark",
+          "weight": 1
+        },
+        {
+          "species": "manta",
+          "weight": 1
+        },
+        {
+          "species": "dolphin",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "clear",
+        "cloudy",
+        "storm"
+      ],
+      "hazard": "Requins de récif.",
+      "marine": true,
+      "surface": {
+        "sand": 1
+      }
+    },
+    {
+      "id": "lake_bed",
+      "name": "Fond de lac",
+      "when": {
+        "maxAlt": 6
+      },
+      "ground": "#3b4a3c",
+      "wet": true,
+      "vegetation": [
+        {
+          "kind": "grass",
+          "perM2": 0.01
+        }
+      ],
+      "resources": {
+        "expected": 0.6,
+        "table": {
+          "mineral_silicate": 2,
+          "bio_sample": 1
+        }
+      },
+      "animals": [
+        {
+          "species": "hydrolepis",
+          "weight": 2
+        },
+        {
+          "species": "flamingo",
+          "weight": 2
+        },
+        {
+          "species": "giant_frog",
+          "weight": 1
+        },
+        {
+          "species": "crocodile",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "fog",
+        "rain",
+        "cloudy"
+      ],
+      "hazard": "Eau profonde : nage ralentie, moteurs endommagés en immersion.",
+      "surface": {
+        "dirt": 0.7,
+        "sand": 0.3
+      }
+    },
+    {
+      "id": "volcanic",
+      "name": "Zone volcanique",
+      "when": {
+        "minVolcano": 0.22
+      },
+      "ground": "#2a2522",
+      "vegetation": [
+        {
+          "kind": "deadtree",
+          "perM2": 0.0008
+        },
+        {
+          "kind": "lavarock",
+          "perM2": 0.0035
+        }
+      ],
+      "resources": {
+        "expected": 2.4,
+        "table": {
+          "crystal_energy": 2,
+          "ore_metal": 3,
+          "alien_sample": 1,
+          "magma_core": 2,
+          "rare_crystal": 1
+        }
+      },
+      "animals": [
+        {
+          "species": "ashflyer",
+          "weight": 2
+        },
+        {
+          "species": "crystalback",
+          "weight": 2
+        },
+        {
+          "species": "ashstrider",
+          "weight": 0.6
+        }
+      ],
+      "weather": [
+        "ashfall",
+        "clear",
+        "cloudy"
+      ],
+      "hazard": "Chaleur extrême et cendres : la température des composants grimpe vite.",
+      "lava": true,
+      "surface": {
+        "rock": 0.7,
+        "dirt": 0.3
+      }
+    },
+    {
+      "id": "crater",
+      "name": "Cratère d'impact",
+      "when": {
+        "minCrater": 0.12
+      },
+      "ground": "#6b6763",
+      "vegetation": [
+        {
+          "kind": "rock",
+          "perM2": 0.006
+        },
+        {
+          "kind": "spire",
+          "perM2": 0.0004
+        }
+      ],
+      "resources": {
+        "expected": 2.6,
+        "table": {
+          "ore_metal": 3,
+          "alien_sample": 2,
+          "crystal_energy": 1,
+          "rare_crystal": 1,
+          "ancient_tech": 0.4
+        }
+      },
+      "animals": [
+        {
+          "species": "crystalback",
+          "weight": 2
+        },
+        {
+          "species": "ashstrider",
+          "weight": 0.4
+        }
+      ],
+      "weather": [
+        "clear",
+        "cloudy"
+      ],
+      "hazard": "Fond de cratère exposé : peu de couvert.",
+      "surface": {
+        "dry": 0.5,
+        "rock": 0.5
+      }
+    },
+    {
+      "id": "canyon",
+      "name": "Canyon",
+      "when": {
+        "minCanyon": 0.22
+      },
+      "ground": "#a1522f",
+      "vegetation": [
+        {
+          "kind": "spire",
+          "perM2": 0.0018
+        },
+        {
+          "kind": "rock",
+          "perM2": 0.004
+        },
+        {
+          "kind": "shrub",
+          "perM2": 0.001
+        }
+      ],
+      "resources": {
+        "expected": 2.2,
+        "table": {
+          "mineral_silicate": 3,
+          "ore_metal": 2,
+          "crystal_energy": 1,
+          "rare_crystal": 0.5
+        }
+      },
+      "animals": [
+        {
+          "species": "dunewyrm",
+          "weight": 2
+        },
+        {
+          "species": "sablier",
+          "weight": 1
+        },
+        {
+          "species": "hornback",
+          "weight": 0.6
+        },
+        {
+          "species": "glidewing",
+          "weight": 1
+        },
+        {
+          "species": "golden_eagle",
+          "weight": 1
+        },
+        {
+          "species": "desert_scorpion",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "clear",
+        "cloudy",
+        "storm"
+      ],
+      "hazard": "Parois abruptes et crues soudaines.",
+      "surface": {
+        "dry": 0.4,
+        "sand": 0.3,
+        "rock": 0.3
+      }
+    },
+    {
+      "id": "polar_ice",
+      "name": "Région polaire",
+      "when": {
+        "maxTemp": -4
+      },
+      "ground": "#dbe8f1",
+      "vegetation": [
+        {
+          "kind": "icespike",
+          "perM2": 0.0016
+        },
+        {
+          "kind": "rock",
+          "perM2": 0.0006
+        }
+      ],
+      "resources": {
+        "expected": 1.8,
+        "table": {
+          "crystal_energy": 3,
+          "ore_metal": 2,
+          "cryo_shard": 2
+        }
+      },
+      "animals": [
+        {
+          "species": "frostraptor",
+          "weight": 2
+        },
+        {
+          "species": "frigo_stag",
+          "weight": 1
+        },
+        {
+          "species": "penguin",
+          "weight": 3
+        },
+        {
+          "species": "arctic_fox",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "snow",
+        "storm",
+        "fog"
+      ],
+      "hazard": "Froid extrême : le module de survie est quasi indispensable.",
+      "surface": {
+        "snow": 1
+      }
+    },
+    {
+      "id": "snow_peaks",
+      "name": "Montagnes enneigées",
+      "when": {
+        "minAlt": 95
+      },
+      "ground": "#7d8794",
+      "snowLine": 110,
+      "vegetation": [
+        {
+          "kind": "rock",
+          "perM2": 0.0025
+        }
+      ],
+      "resources": {
+        "expected": 1.8,
+        "table": {
+          "ore_metal": 3,
+          "crystal_energy": 1,
+          "rare_crystal": 0.4,
+          "cryo_shard": 0.5
+        }
+      },
+      "animals": [
+        {
+          "species": "frigo_stag",
+          "weight": 0.6
+        },
+        {
+          "species": "golden_eagle",
+          "weight": 1
+        },
+        {
+          "species": "snow_hare",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "snow",
+        "storm",
+        "cloudy"
+      ],
+      "hazard": "Froid intense et vent violent : consommation d'énergie accrue.",
+      "surface": {
+        "rock": 0.6,
+        "snow": 0.4
+      }
+    },
+    {
+      "id": "tundra",
+      "name": "Toundra arctique",
+      "when": {
+        "maxTemp": 4
+      },
+      "ground": "#8a9482",
+      "vegetation": [
+        {
+          "kind": "shrub",
+          "perM2": 0.004
+        },
+        {
+          "kind": "grass",
+          "perM2": 0.02
+        },
+        {
+          "kind": "rock",
+          "perM2": 0.0008
+        }
+      ],
+      "resources": {
+        "expected": 1.6,
+        "table": {
+          "ore_metal": 2,
+          "crystal_energy": 2,
+          "cryo_shard": 0.6
+        }
+      },
+      "animals": [
+        {
+          "species": "frigo_stag",
+          "weight": 2
+        },
+        {
+          "species": "tyrannoraptor",
+          "weight": 0.2
+        },
+        {
+          "species": "frostraptor",
+          "weight": 0.8
+        },
+        {
+          "species": "bison",
+          "weight": 2
+        },
+        {
+          "species": "grey_wolf",
+          "weight": 1
+        },
+        {
+          "species": "arctic_fox",
+          "weight": 1
+        },
+        {
+          "species": "snow_hare",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "snow",
+        "cloudy",
+        "fog"
+      ],
+      "hazard": "Températures négatives : module de survie recommandé.",
+      "surface": {
+        "dirt": 0.5,
+        "snow": 0.3,
+        "grass": 0.2
+      }
+    },
+    {
+      "id": "rocky_plateau",
+      "name": "Plateau rocheux",
+      "when": {
+        "minAlt": 55,
+        "maxMoist": 0.4
+      },
+      "ground": "#7a6c5c",
+      "vegetation": [
+        {
+          "kind": "rock",
+          "perM2": 0.0045
+        },
+        {
+          "kind": "shrub",
+          "perM2": 0.0015
+        }
+      ],
+      "resources": {
+        "expected": 2.4,
+        "table": {
+          "ore_metal": 3,
+          "mineral_silicate": 2,
+          "crystal_energy": 1
+        }
+      },
+      "animals": [
+        {
+          "species": "velox",
+          "weight": 1
+        },
+        {
+          "species": "glidewing",
+          "weight": 1.5
+        },
+        {
+          "species": "ashstrider",
+          "weight": 0.2
+        },
+        {
+          "species": "golden_eagle",
+          "weight": 2
+        }
+      ],
+      "weather": [
+        "cloudy",
+        "storm",
+        "clear"
+      ],
+      "hazard": "Éboulis instables et vents forts.",
+      "surface": {
+        "rock": 0.7,
+        "dry": 0.3
+      }
+    },
+    {
+      "id": "desert",
+      "name": "Désert chaud aux dunes",
+      "when": {
+        "minTemp": 24,
+        "maxMoist": 0.45
+      },
+      "ground": "#c2a064",
+      "vegetation": [
+        {
+          "kind": "cactus",
+          "perM2": 0.0016
+        },
+        {
+          "kind": "rock",
+          "perM2": 0.0004
+        }
+      ],
+      "resources": {
+        "expected": 1.4,
+        "table": {
+          "mineral_silicate": 3,
+          "crystal_energy": 2
+        }
+      },
+      "animals": [
+        {
+          "species": "sablier",
+          "weight": 2
+        },
+        {
+          "species": "velox",
+          "weight": 0.5
+        },
+        {
+          "species": "dunewyrm",
+          "weight": 1.5
+        },
+        {
+          "species": "camel",
+          "weight": 2
+        },
+        {
+          "species": "desert_scorpion",
+          "weight": 2
+        }
+      ],
+      "weather": [
+        "clear",
+        "sandstorm",
+        "clear"
+      ],
+      "hazard": "Tempêtes de sable et chaleur : surchauffe des composants.",
+      "surface": {
+        "sand": 1
+      }
+    },
+    {
+      "id": "jungle",
+      "name": "Jungle préhistorique",
+      "when": {
+        "minTemp": 22,
+        "minMoist": 0.55
+      },
+      "ground": "#2d5226",
+      "vegetation": [
+        {
+          "kind": "palm",
+          "perM2": 0.0055
+        },
+        {
+          "kind": "fern",
+          "perM2": 0.03
+        },
+        {
+          "kind": "broadleaf",
+          "perM2": 0.0025
+        }
+      ],
+      "resources": {
+        "expected": 2.2,
+        "table": {
+          "bio_sample": 3,
+          "electronic_part": 1,
+          "ore_metal": 1,
+          "fiber": 3
+        }
+      },
+      "animals": [
+        {
+          "species": "brachyceros",
+          "weight": 2
+        },
+        {
+          "species": "tyrannoraptor",
+          "weight": 1
+        },
+        {
+          "species": "velox",
+          "weight": 1.5
+        },
+        {
+          "species": "hornback",
+          "weight": 1
+        },
+        {
+          "species": "glowswarm",
+          "weight": 1.5
+        },
+        {
+          "species": "riverstalker",
+          "weight": 0.4
+        },
+        {
+          "species": "parrot",
+          "weight": 3
+        },
+        {
+          "species": "crocodile",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "rain",
+        "cloudy",
+        "clear"
+      ],
+      "hazard": "Prédateurs territoriaux : rester discret.",
+      "surface": {
+        "grass": 0.6,
+        "dirt": 0.4
+      }
+    },
+    {
+      "id": "wetland",
+      "name": "Marécage",
+      "when": {
+        "minMoist": 0.64,
+        "maxAlt": 14
+      },
+      "ground": "#3f5a38",
+      "wet": true,
+      "vegetation": [
+        {
+          "kind": "shrub",
+          "perM2": 0.005
+        },
+        {
+          "kind": "fern",
+          "perM2": 0.025
+        }
+      ],
+      "resources": {
+        "expected": 1.2,
+        "table": {
+          "bio_sample": 3,
+          "mineral_silicate": 1,
+          "fiber": 2
+        }
+      },
+      "animals": [
+        {
+          "species": "hydrolepis",
+          "weight": 2
+        },
+        {
+          "species": "aerovol",
+          "weight": 1
+        },
+        {
+          "species": "glowswarm",
+          "weight": 2
+        },
+        {
+          "species": "riverstalker",
+          "weight": 1
+        },
+        {
+          "species": "flamingo",
+          "weight": 3
+        },
+        {
+          "species": "crocodile",
+          "weight": 2
+        },
+        {
+          "species": "giant_frog",
+          "weight": 2
+        },
+        {
+          "species": "stork",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "fog",
+        "rain",
+        "cloudy"
+      ],
+      "hazard": "Sol instable : les véhicules s'enlisent.",
+      "surface": {
+        "dirt": 0.6,
+        "grass": 0.4
+      }
+    },
+    {
+      "id": "conifer_forest",
+      "name": "Forêt de conifères",
+      "when": {
+        "minAlt": 40,
+        "minMoist": 0.4
+      },
+      "ground": "#35513a",
+      "vegetation": [
+        {
+          "kind": "pine",
+          "perM2": 0.0068
+        },
+        {
+          "kind": "grass",
+          "perM2": 0.02
+        },
+        {
+          "kind": "shrub",
+          "perM2": 0.002
+        }
+      ],
+      "resources": {
+        "expected": 1.8,
+        "table": {
+          "ore_metal": 2,
+          "bio_sample": 2,
+          "crystal_energy": 1,
+          "fiber": 1.5
+        }
+      },
+      "animals": [
+        {
+          "species": "lumifer",
+          "weight": 2
+        },
+        {
+          "species": "nocturne",
+          "weight": 1
+        },
+        {
+          "species": "tyrannoraptor",
+          "weight": 0.3
+        },
+        {
+          "species": "bristleboar",
+          "weight": 1
+        },
+        {
+          "species": "frostraptor",
+          "weight": 0.3
+        },
+        {
+          "species": "red_deer",
+          "weight": 2
+        },
+        {
+          "species": "grey_wolf",
+          "weight": 2
+        },
+        {
+          "species": "brown_bear",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "cloudy",
+        "rain",
+        "snow",
+        "clear"
+      ],
+      "hazard": "Neige en altitude, visibilité réduite le soir.",
+      "surface": {
+        "grass": 0.5,
+        "dirt": 0.5
+      }
+    },
+    {
+      "id": "temperate_forest",
+      "name": "Forêt tempérée dense",
+      "when": {
+        "minMoist": 0.5
+      },
+      "ground": "#4a6a2c",
+      "vegetation": [
+        {
+          "kind": "broadleaf",
+          "perM2": 0.0065
+        },
+        {
+          "kind": "pine",
+          "perM2": 0.0015
+        },
+        {
+          "kind": "grass",
+          "perM2": 0.035
+        },
+        {
+          "kind": "shrub",
+          "perM2": 0.004
+        }
+      ],
+      "resources": {
+        "expected": 2.0,
+        "table": {
+          "bio_sample": 3,
+          "ore_metal": 1,
+          "mineral_silicate": 1,
+          "crystal_energy": 1,
+          "fiber": 2
+        }
+      },
+      "animals": [
+        {
+          "species": "lumifer",
+          "weight": 3
+        },
+        {
+          "species": "nocturne",
+          "weight": 1.5
+        },
+        {
+          "species": "tyrannoraptor",
+          "weight": 0.4
+        },
+        {
+          "species": "bristleboar",
+          "weight": 1.5
+        },
+        {
+          "species": "glowswarm",
+          "weight": 1.2
+        },
+        {
+          "species": "red_deer",
+          "weight": 3
+        },
+        {
+          "species": "grey_wolf",
+          "weight": 1
+        },
+        {
+          "species": "brown_bear",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "clear",
+        "cloudy",
+        "rain",
+        "fog"
+      ],
+      "hazard": "Végétation dense : visibilité réduite.",
+      "surface": {
+        "grass": 0.7,
+        "dirt": 0.3
+      }
+    },
+    {
+      "id": "meadow",
+      "name": "Prairie et savane",
+      "when": {},
+      "ground": "#7e9a4c",
+      "vegetation": [
+        {
+          "kind": "grass",
+          "perM2": 0.06
+        },
+        {
+          "kind": "shrub",
+          "perM2": 0.0035
+        },
+        {
+          "kind": "broadleaf",
+          "perM2": 0.0003
+        }
+      ],
+      "resources": {
+        "expected": 1.8,
+        "table": {
+          "mineral_silicate": 2,
+          "bio_sample": 2,
+          "crystal_energy": 1,
+          "fiber": 1.5
+        }
+      },
+      "animals": [
+        {
+          "species": "lumifer",
+          "weight": 3
+        },
+        {
+          "species": "velox",
+          "weight": 2
+        },
+        {
+          "species": "aerovol",
+          "weight": 1
+        },
+        {
+          "species": "brachyceros",
+          "weight": 0.6
+        },
+        {
+          "species": "hornback",
+          "weight": 0.8
+        },
+        {
+          "species": "glidewing",
+          "weight": 0.8
+        },
+        {
+          "species": "bristleboar",
+          "weight": 0.8
+        },
+        {
+          "species": "wild_horse",
+          "weight": 2
+        },
+        {
+          "species": "stork",
+          "weight": 1
+        },
+        {
+          "species": "snow_hare",
+          "weight": 1
+        },
+        {
+          "species": "bison",
+          "weight": 1
+        }
+      ],
+      "weather": [
+        "clear",
+        "cloudy",
+        "rain",
+        "storm"
+      ],
+      "hazard": "Terrain ouvert : repéré de loin par les capteurs ennemis.",
+      "surface": {
+        "grass": 1
+      }
     }
-   },
-   "animals": [
-    {
-     "species": "angler",
-     "weight": 2
-    },
-    {
-     "species": "manta",
-     "weight": 1
-    }
-   ],
-   "weather": [
-    "cloudy",
-    "storm",
-    "fog"
-   ],
-   "hazard": "Obscurité totale et forte pression : équipement de plongée profond requis.",
-   "marine": true
-  },
-  {
-   "id": "kelp_forest",
-   "name": "Forêt de kelp",
-   "when": {
-    "maxAlt": -4,
-    "maxTemp": 15
-   },
-   "ground": "#33442f",
-   "wet": true,
-   "vegetation": [
-    {
-     "kind": "kelp",
-     "perM2": 0.012
-    },
-    {
-     "kind": "grass",
-     "perM2": 0.02
-    }
-   ],
-   "resources": {
-    "expected": 1.5,
-    "table": {
-     "bio_sample": 3,
-     "mineral_silicate": 1,
-     "fiber": 3
-    }
-   },
-   "animals": [
-    {
-     "species": "shoal",
-     "weight": 3
-    },
-    {
-     "species": "reefshark",
-     "weight": 1
-    },
-    {
-     "species": "manta",
-     "weight": 1
-    }
-   ],
-   "weather": [
-    "cloudy",
-    "rain",
-    "fog"
-   ],
-   "hazard": "Courants et prédateurs marins.",
-   "marine": true
-  },
-  {
-   "id": "coral_reef",
-   "name": "Récif corallien",
-   "when": {
-    "maxAlt": -4,
-    "minTemp": 15
-   },
-   "ground": "#cdbb98",
-   "wet": true,
-   "vegetation": [
-    {
-     "kind": "coral",
-     "perM2": 0.01
-    },
-    {
-     "kind": "kelp",
-     "perM2": 0.002
-    },
-    {
-     "kind": "grass",
-     "perM2": 0.02
-    }
-   ],
-   "resources": {
-    "expected": 1.8,
-    "table": {
-     "bio_sample": 2,
-     "mineral_silicate": 2,
-     "crystal_energy": 1,
-     "deep_pearl": 0.4,
-     "fiber": 1
-    }
-   },
-   "animals": [
-    {
-     "species": "shoal",
-     "weight": 3
-    },
-    {
-     "species": "reefshark",
-     "weight": 1
-    },
-    {
-     "species": "manta",
-     "weight": 1
-    }
-   ],
-   "weather": [
-    "clear",
-    "cloudy",
-    "storm"
-   ],
-   "hazard": "Requins de récif.",
-   "marine": true
-  },
-  {
-   "id": "lake_bed",
-   "name": "Fond de lac",
-   "when": {
-    "maxAlt": 6
-   },
-   "ground": "#3b4a3c",
-   "wet": true,
-   "vegetation": [
-    {
-     "kind": "grass",
-     "perM2": 0.01
-    }
-   ],
-   "resources": {
-    "expected": 0.6,
-    "table": {
-     "mineral_silicate": 2,
-     "bio_sample": 1
-    }
-   },
-   "animals": [
-    {
-     "species": "hydrolepis",
-     "weight": 2
-    }
-   ],
-   "weather": [
-    "fog",
-    "rain",
-    "cloudy"
-   ],
-   "hazard": "Eau profonde : nage ralentie, moteurs endommagés en immersion."
-  },
-  {
-   "id": "volcanic",
-   "name": "Zone volcanique",
-   "when": {
-    "minVolcano": 0.22
-   },
-   "ground": "#2a2522",
-   "vegetation": [
-    {
-     "kind": "deadtree",
-     "perM2": 0.0008
-    },
-    {
-     "kind": "lavarock",
-     "perM2": 0.0035
-    }
-   ],
-   "resources": {
-    "expected": 2.4,
-    "table": {
-     "crystal_energy": 2,
-     "ore_metal": 3,
-     "alien_sample": 1,
-     "magma_core": 2,
-     "rare_crystal": 1
-    }
-   },
-   "animals": [
-    {
-     "species": "ashflyer",
-     "weight": 2
-    },
-    {
-     "species": "crystalback",
-     "weight": 2
-    },
-    {
-     "species": "ashstrider",
-     "weight": 0.6
-    }
-   ],
-   "weather": [
-    "ashfall",
-    "clear",
-    "cloudy"
-   ],
-   "hazard": "Chaleur extrême et cendres : la température des composants grimpe vite.",
-   "lava": true
-  },
-  {
-   "id": "crater",
-   "name": "Cratère d'impact",
-   "when": {
-    "minCrater": 0.12
-   },
-   "ground": "#6b6763",
-   "vegetation": [
-    {
-     "kind": "rock",
-     "perM2": 0.006
-    },
-    {
-     "kind": "spire",
-     "perM2": 0.0004
-    }
-   ],
-   "resources": {
-    "expected": 2.6,
-    "table": {
-     "ore_metal": 3,
-     "alien_sample": 2,
-     "crystal_energy": 1,
-     "rare_crystal": 1,
-     "ancient_tech": 0.4
-    }
-   },
-   "animals": [
-    {
-     "species": "crystalback",
-     "weight": 2
-    },
-    {
-     "species": "ashstrider",
-     "weight": 0.4
-    }
-   ],
-   "weather": [
-    "clear",
-    "cloudy"
-   ],
-   "hazard": "Fond de cratère exposé : peu de couvert."
-  },
-  {
-   "id": "canyon",
-   "name": "Canyon",
-   "when": {
-    "minCanyon": 0.22
-   },
-   "ground": "#a1522f",
-   "vegetation": [
-    {
-     "kind": "spire",
-     "perM2": 0.0018
-    },
-    {
-     "kind": "rock",
-     "perM2": 0.004
-    },
-    {
-     "kind": "shrub",
-     "perM2": 0.001
-    }
-   ],
-   "resources": {
-    "expected": 2.2,
-    "table": {
-     "mineral_silicate": 3,
-     "ore_metal": 2,
-     "crystal_energy": 1,
-     "rare_crystal": 0.5
-    }
-   },
-   "animals": [
-    {
-     "species": "dunewyrm",
-     "weight": 2
-    },
-    {
-     "species": "sablier",
-     "weight": 1
-    },
-    {
-     "species": "hornback",
-     "weight": 0.6
-    },
-    {
-     "species": "glidewing",
-     "weight": 1
-    }
-   ],
-   "weather": [
-    "clear",
-    "cloudy",
-    "storm"
-   ],
-   "hazard": "Parois abruptes et crues soudaines."
-  },
-  {
-   "id": "polar_ice",
-   "name": "Région polaire",
-   "when": {
-    "maxTemp": -4
-   },
-   "ground": "#dbe8f1",
-   "vegetation": [
-    {
-     "kind": "icespike",
-     "perM2": 0.0016
-    },
-    {
-     "kind": "rock",
-     "perM2": 0.0006
-    }
-   ],
-   "resources": {
-    "expected": 1.8,
-    "table": {
-     "crystal_energy": 3,
-     "ore_metal": 2,
-     "cryo_shard": 2
-    }
-   },
-   "animals": [
-    {
-     "species": "frostraptor",
-     "weight": 2
-    },
-    {
-     "species": "frigo_stag",
-     "weight": 1
-    }
-   ],
-   "weather": [
-    "snow",
-    "storm",
-    "fog"
-   ],
-   "hazard": "Froid extrême : le module de survie est quasi indispensable."
-  },
-  {
-   "id": "snow_peaks",
-   "name": "Montagnes enneigées",
-   "when": {
-    "minAlt": 95
-   },
-   "ground": "#7d8794",
-   "snowLine": 110,
-   "vegetation": [
-    {
-     "kind": "rock",
-     "perM2": 0.0025
-    }
-   ],
-   "resources": {
-    "expected": 1.8,
-    "table": {
-     "ore_metal": 3,
-     "crystal_energy": 1,
-     "rare_crystal": 0.4,
-     "cryo_shard": 0.5
-    }
-   },
-   "animals": [
-    {
-     "species": "frigo_stag",
-     "weight": 0.6
-    }
-   ],
-   "weather": [
-    "snow",
-    "storm",
-    "cloudy"
-   ],
-   "hazard": "Froid intense et vent violent : consommation d'énergie accrue."
-  },
-  {
-   "id": "tundra",
-   "name": "Toundra arctique",
-   "when": {
-    "maxTemp": 4
-   },
-   "ground": "#8a9482",
-   "vegetation": [
-    {
-     "kind": "shrub",
-     "perM2": 0.004
-    },
-    {
-     "kind": "grass",
-     "perM2": 0.02
-    },
-    {
-     "kind": "rock",
-     "perM2": 0.0008
-    }
-   ],
-   "resources": {
-    "expected": 1.6,
-    "table": {
-     "ore_metal": 2,
-     "crystal_energy": 2,
-     "cryo_shard": 0.6
-    }
-   },
-   "animals": [
-    {
-     "species": "frigo_stag",
-     "weight": 2
-    },
-    {
-     "species": "tyrannoraptor",
-     "weight": 0.2
-    },
-    {
-     "species": "frostraptor",
-     "weight": 0.8
-    }
-   ],
-   "weather": [
-    "snow",
-    "cloudy",
-    "fog"
-   ],
-   "hazard": "Températures négatives : module de survie recommandé."
-  },
-  {
-   "id": "rocky_plateau",
-   "name": "Plateau rocheux",
-   "when": {
-    "minAlt": 55,
-    "maxMoist": 0.4
-   },
-   "ground": "#7a6c5c",
-   "vegetation": [
-    {
-     "kind": "rock",
-     "perM2": 0.0045
-    },
-    {
-     "kind": "shrub",
-     "perM2": 0.0015
-    }
-   ],
-   "resources": {
-    "expected": 2.4,
-    "table": {
-     "ore_metal": 3,
-     "mineral_silicate": 2,
-     "crystal_energy": 1
-    }
-   },
-   "animals": [
-    {
-     "species": "velox",
-     "weight": 1
-    },
-    {
-     "species": "glidewing",
-     "weight": 1.5
-    },
-    {
-     "species": "ashstrider",
-     "weight": 0.2
-    }
-   ],
-   "weather": [
-    "cloudy",
-    "storm",
-    "clear"
-   ],
-   "hazard": "Éboulis instables et vents forts."
-  },
-  {
-   "id": "desert",
-   "name": "Désert chaud aux dunes",
-   "when": {
-    "minTemp": 24,
-    "maxMoist": 0.45
-   },
-   "ground": "#c2a064",
-   "vegetation": [
-    {
-     "kind": "cactus",
-     "perM2": 0.0016
-    },
-    {
-     "kind": "rock",
-     "perM2": 0.0004
-    }
-   ],
-   "resources": {
-    "expected": 1.4,
-    "table": {
-     "mineral_silicate": 3,
-     "crystal_energy": 2
-    }
-   },
-   "animals": [
-    {
-     "species": "sablier",
-     "weight": 2
-    },
-    {
-     "species": "velox",
-     "weight": 0.5
-    },
-    {
-     "species": "dunewyrm",
-     "weight": 1.5
-    }
-   ],
-   "weather": [
-    "clear",
-    "sandstorm",
-    "clear"
-   ],
-   "hazard": "Tempêtes de sable et chaleur : surchauffe des composants."
-  },
-  {
-   "id": "jungle",
-   "name": "Jungle préhistorique",
-   "when": {
-    "minTemp": 22,
-    "minMoist": 0.55
-   },
-   "ground": "#2d5226",
-   "vegetation": [
-    {
-     "kind": "palm",
-     "perM2": 0.0055
-    },
-    {
-     "kind": "fern",
-     "perM2": 0.03
-    },
-    {
-     "kind": "broadleaf",
-     "perM2": 0.0025
-    }
-   ],
-   "resources": {
-    "expected": 2.2,
-    "table": {
-     "bio_sample": 3,
-     "electronic_part": 1,
-     "ore_metal": 1,
-     "fiber": 3
-    }
-   },
-   "animals": [
-    {
-     "species": "brachyceros",
-     "weight": 2
-    },
-    {
-     "species": "tyrannoraptor",
-     "weight": 1
-    },
-    {
-     "species": "velox",
-     "weight": 1.5
-    },
-    {
-     "species": "hornback",
-     "weight": 1
-    },
-    {
-     "species": "glowswarm",
-     "weight": 1.5
-    },
-    {
-     "species": "riverstalker",
-     "weight": 0.4
-    }
-   ],
-   "weather": [
-    "rain",
-    "cloudy",
-    "clear"
-   ],
-   "hazard": "Prédateurs territoriaux : rester discret."
-  },
-  {
-   "id": "wetland",
-   "name": "Marécage",
-   "when": {
-    "minMoist": 0.64,
-    "maxAlt": 14
-   },
-   "ground": "#3f5a38",
-   "wet": true,
-   "vegetation": [
-    {
-     "kind": "shrub",
-     "perM2": 0.005
-    },
-    {
-     "kind": "fern",
-     "perM2": 0.025
-    }
-   ],
-   "resources": {
-    "expected": 1.2,
-    "table": {
-     "bio_sample": 3,
-     "mineral_silicate": 1,
-     "fiber": 2
-    }
-   },
-   "animals": [
-    {
-     "species": "hydrolepis",
-     "weight": 2
-    },
-    {
-     "species": "aerovol",
-     "weight": 1
-    },
-    {
-     "species": "glowswarm",
-     "weight": 2
-    },
-    {
-     "species": "riverstalker",
-     "weight": 1
-    }
-   ],
-   "weather": [
-    "fog",
-    "rain",
-    "cloudy"
-   ],
-   "hazard": "Sol instable : les véhicules s'enlisent."
-  },
-  {
-   "id": "conifer_forest",
-   "name": "Forêt de conifères",
-   "when": {
-    "minAlt": 40,
-    "minMoist": 0.4
-   },
-   "ground": "#35513a",
-   "vegetation": [
-    {
-     "kind": "pine",
-     "perM2": 0.0068
-    },
-    {
-     "kind": "grass",
-     "perM2": 0.02
-    },
-    {
-     "kind": "shrub",
-     "perM2": 0.002
-    }
-   ],
-   "resources": {
-    "expected": 1.8,
-    "table": {
-     "ore_metal": 2,
-     "bio_sample": 2,
-     "crystal_energy": 1,
-     "fiber": 1.5
-    }
-   },
-   "animals": [
-    {
-     "species": "lumifer",
-     "weight": 2
-    },
-    {
-     "species": "nocturne",
-     "weight": 1
-    },
-    {
-     "species": "tyrannoraptor",
-     "weight": 0.3
-    },
-    {
-     "species": "bristleboar",
-     "weight": 1
-    },
-    {
-     "species": "frostraptor",
-     "weight": 0.3
-    }
-   ],
-   "weather": [
-    "cloudy",
-    "rain",
-    "snow",
-    "clear"
-   ],
-   "hazard": "Neige en altitude, visibilité réduite le soir."
-  },
-  {
-   "id": "temperate_forest",
-   "name": "Forêt tempérée dense",
-   "when": {
-    "minMoist": 0.5
-   },
-   "ground": "#4a6a2c",
-   "vegetation": [
-    {
-     "kind": "broadleaf",
-     "perM2": 0.0065
-    },
-    {
-     "kind": "pine",
-     "perM2": 0.0015
-    },
-    {
-     "kind": "grass",
-     "perM2": 0.035
-    },
-    {
-     "kind": "shrub",
-     "perM2": 0.004
-    }
-   ],
-   "resources": {
-    "expected": 2.0,
-    "table": {
-     "bio_sample": 3,
-     "ore_metal": 1,
-     "mineral_silicate": 1,
-     "crystal_energy": 1,
-     "fiber": 2
-    }
-   },
-   "animals": [
-    {
-     "species": "lumifer",
-     "weight": 3
-    },
-    {
-     "species": "nocturne",
-     "weight": 1.5
-    },
-    {
-     "species": "tyrannoraptor",
-     "weight": 0.4
-    },
-    {
-     "species": "bristleboar",
-     "weight": 1.5
-    },
-    {
-     "species": "glowswarm",
-     "weight": 1.2
-    }
-   ],
-   "weather": [
-    "clear",
-    "cloudy",
-    "rain",
-    "fog"
-   ],
-   "hazard": "Végétation dense : visibilité réduite."
-  },
-  {
-   "id": "meadow",
-   "name": "Prairie et savane",
-   "when": {},
-   "ground": "#7e9a4c",
-   "vegetation": [
-    {
-     "kind": "grass",
-     "perM2": 0.06
-    },
-    {
-     "kind": "shrub",
-     "perM2": 0.0035
-    },
-    {
-     "kind": "broadleaf",
-     "perM2": 0.0003
-    }
-   ],
-   "resources": {
-    "expected": 1.8,
-    "table": {
-     "mineral_silicate": 2,
-     "bio_sample": 2,
-     "crystal_energy": 1,
-     "fiber": 1.5
-    }
-   },
-   "animals": [
-    {
-     "species": "lumifer",
-     "weight": 3
-    },
-    {
-     "species": "velox",
-     "weight": 2
-    },
-    {
-     "species": "aerovol",
-     "weight": 1
-    },
-    {
-     "species": "brachyceros",
-     "weight": 0.6
-    },
-    {
-     "species": "hornback",
-     "weight": 0.8
-    },
-    {
-     "species": "glidewing",
-     "weight": 0.8
-    },
-    {
-     "species": "bristleboar",
-     "weight": 0.8
-    }
-   ],
-   "weather": [
-    "clear",
-    "cloudy",
-    "rain",
-    "storm"
-   ],
-   "hazard": "Terrain ouvert : repéré de loin par les capteurs ennemis."
-  }
- ]
+  ]
 }

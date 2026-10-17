@@ -43,6 +43,26 @@
 
     /* HUD */
     #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+    #gear { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+    #hotbar { display: flex; gap: 4px; }
+    #hotbar .slot { min-width: 64px; padding: 4px 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; font-size: 0.72em; text-align: center; opacity: 0.85; }
+    #hotbar .slot.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; opacity: 1; }
+    #hotbar .slot.locked { opacity: 0.35; }
+    #hotbar .slot small { display: block; opacity: 0.7; }
+    #ammo { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; font-size: 0.9em; display: flex; gap: 10px; }
+    #ammo.reloading #ammo-count { color: #ffb347; }
+    #jet { display: flex; align-items: center; gap: 6px; font-size: 0.72em; width: 200px; }
+    #jet .track { flex: 1; height: 5px; background: rgba(255,255,255,0.12); border-radius: 3px; overflow: hidden; }
+    #jet .fill { height: 100%; background: #ffb347; }
+    #scope { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at center, transparent 0 31vmin, rgba(0,0,0,0.92) 31.5vmin); }
+    #scope::before, #scope::after { content: ''; position: absolute; left: 50%; top: 50%; background: rgba(0,0,0,0.75); }
+    #scope::before { width: 62vmin; height: 1px; transform: translate(-50%, -50%); }
+    #scope::after { width: 1px; height: 62vmin; transform: translate(-50%, -50%); }
+    .skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .skins button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
+    .skins button.active { border-color: var(--accent); }
+    .swatches { display: flex; gap: 3px; }
+    .swatches i { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); display: inline-block; }
     #status { position: absolute; left: 14px; top: 14px; width: min(260px, 46vw); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.85em; }
     .bar { display: grid; grid-template-columns: 74px 1fr 34px; align-items: center; gap: 8px; margin: 6px 0; }
     .bar .track { grid-column: 2; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
@@ -157,8 +177,8 @@
 
   <div id="hud" class="hidden">
     <div id="status">
-      <div class="bar"><span>Énergie</span><div class="track"><div class="fill" id="bar-energy"></div></div><span id="val-energy"></span></div>
-      <div class="bar"><span>Intégrité</span><div class="track"><div class="fill" id="bar-integrity"></div></div><span id="val-integrity"></span></div>
+      <div class="bar"><span>Endurance</span><div class="track"><div class="fill" id="bar-energy"></div></div><span id="val-energy"></span></div>
+      <div class="bar"><span>Santé</span><div class="track"><div class="fill" id="bar-integrity"></div></div><span id="val-integrity"></span></div>
       <div class="stat-row"><span id="temp">— °C</span><span id="weather">—</span></div>
       <div class="stat-row"><span id="biome">—</span><span id="clock">—</span></div>
       <div class="stat-row"><span>Outils <b id="tool">100</b> %</span><span id="depth"></span></div>
@@ -170,6 +190,12 @@
     <div id="prompt" class="hidden"></div>
     <div id="cross"></div>
     <canvas id="radar" width="150" height="150"></canvas>
+    <div id="scope" class="hidden"></div>
+    <div id="gear">
+      <div id="jet"><span>Jetpack</span><div class="track"><div class="fill" id="jet-fill"></div></div></div>
+      <div id="ammo" class="hidden"><b id="ammo-name"></b><span id="ammo-count"></span></div>
+      <div id="hotbar"></div>
+    </div>
     <div id="vehicle-hud" class="hidden"><b id="vehicle-name"></b><span id="vehicle-speed"></span><span id="vehicle-extra"></span><span id="vehicle-energy"></span><span id="vehicle-hull"></span></div>
     <div id="toasts"></div>
     <div id="perf" class="hidden"></div>

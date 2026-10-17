@@ -111,7 +111,7 @@ export class World {
 
   /** Requests chunk generation, on a worker or synchronously if workers are unavailable. */
   request(cx, cz, lod, key) {
-    const req = { cx, cz, lod, seed: this.seed, density: this.quality.vegDensity };
+    const req = { cx, cz, lod, seed: this.seed, climateShift: this.terrain.climateShift ?? 0, density: this.quality.vegDensity };
     if (this.syncFallback || this.workers.length === 0) {
       const payload = generateChunk(this.terrain, this.content, req);
       this.results.push({ key, lod, payload });
@@ -190,7 +190,7 @@ export class World {
     this.scene.add(built.group);
     const chunk = {
       key, cx, cz, lod, group: built.group, nodes: built.nodes,
-      colliders: payload.colliders, spawns: lod === 0 ? payload.spawns : []
+      colliders: payload.colliders, colliderKinds: payload.colliderKinds, spawns: lod === 0 ? payload.spawns : []
     };
     this.chunks.set(key, chunk);
     this.stats.built++;
@@ -217,6 +217,50 @@ export class World {
   /** Terrain height in metres at (x, z). */
   heightAt(x, z) {
     return this.terrain.height(x, z);
+  }
+
+  /** Walkable height at (x, z) for something whose feet are at y: terrain or a built floor / ramp. */
+  groundAt(x, z, y) {
+    const h = this.terrain.height(x, z);
+    if (!this.buildGrid || y === undefined) return h;
+    return Math.max(h, this.buildGrid.groundAt(x, z, y));
+  }
+
+  /** Underside of the lowest built floor above the feet, or Infinity. */
+  ceilingAt(x, z, headY, feetY) {
+    return this.buildGrid ? this.buildGrid.ceilingAt(x, z, headY, feetY) : Infinity;
+  }
+
+  /**
+   * Tree or rock along a ray (for the harvesting tool): returns { x, z, kind: 'tree' | 'rock', key } or null.
+   * Colliders are vertical cylinders; the test is done in the horizontal plane.
+   */
+  harvestTarget(origin, dir, range) {
+    const hx = dir.x;
+    const hz = dir.z;
+    const hl = Math.hypot(hx, hz) || 1;
+    let best = null;
+    const cx = Math.floor(origin.x / CHUNK_SIZE);
+    const cz = Math.floor(origin.z / CHUNK_SIZE);
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const chunk = this.chunks.get(`${cx + dx},${cz + dz}`);
+        if (!chunk?.colliderKinds) continue;
+        const arr = chunk.colliders;
+        for (let i = 0, n = 0; i < arr.length; i += COLLIDER_STRIDE, n++) {
+          const kind = chunk.colliderKinds[n];
+          if (!kind) continue;
+          const px = arr[i] - origin.x;
+          const pz = arr[i + 1] - origin.z;
+          const t = (px * hx + pz * hz) / hl;
+          if (t < 0 || t > range + arr[i + 2]) continue;
+          const perp = Math.abs(px * hz - pz * hx) / hl;
+          if (perp > arr[i + 2] + 0.35) continue;
+          if (!best || t < best.t) best = { t, x: arr[i], z: arr[i + 1], kind: kind === 1 ? 'tree' : 'rock', key: `${arr[i].toFixed(1)}:${arr[i + 1].toFixed(1)}` };
+        }
+      }
+    }
+    return best;
   }
 
   /** Marks a resource node as collected: it disappears and stays gone after save/load. */
@@ -261,8 +305,12 @@ export class World {
     return out;
   }
 
-  /** Blocks (x, z) when a collider overlaps. Returns the pushed-out position in place. */
-  resolveCollisions(pos, radius) {
+  /**
+   * Blocks (x, z) when a collider overlaps (trees, rocks, structures, built walls when `height` is
+   * given and pos has a y). Returns the pushed-out position in place.
+   */
+  resolveCollisions(pos, radius, height = 1.8) {
+    if (this.buildGrid && pos.y !== undefined) this.buildGrid.resolve(pos, radius, height);
     for (const arr of this.collidersNear(pos.x, pos.z)) {
       for (let i = 0; i < arr.length; i += COLLIDER_STRIDE) {
         const dx = pos.x - arr[i];

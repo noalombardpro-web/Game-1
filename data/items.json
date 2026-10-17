@@ -271,6 +271,90 @@
    "effect": {
     "capacityBonus": 40
    }
+  },
+  {
+   "id": "weapon_plasma_pistol",
+   "name": "Pistolet plasma",
+   "category": "weapon",
+   "stack": 1,
+   "description": "Arme de poing à plasma, semi-automatique. Emplacement 1."
+  },
+  {
+   "id": "weapon_laser_rifle",
+   "name": "Fusil laser",
+   "category": "weapon",
+   "stack": 1,
+   "description": "Fusil automatique à impulsions laser. Emplacement 2."
+  },
+  {
+   "id": "weapon_pulse_shotgun",
+   "name": "Fusil à impulsions",
+   "category": "weapon",
+   "stack": 1,
+   "description": "Arme à dispersion, dévastatrice à courte portée. Emplacement 3."
+  },
+  {
+   "id": "weapon_rail_sniper",
+   "name": "Fusil à rail",
+   "category": "weapon",
+   "stack": 1,
+   "description": "Tir de précision longue portée avec lunette (clic droit). Emplacement 4."
+  },
+  {
+   "id": "weapon_rocket_launcher",
+   "name": "Lance-roquettes",
+   "category": "weapon",
+   "stack": 1,
+   "description": "Roquettes explosives à effet de zone. Emplacement 5."
+  },
+  {
+   "id": "ammo_cell",
+   "name": "Cellules de tir",
+   "category": "ammo",
+   "stack": 999,
+   "description": "Munitions du pistolet plasma et du fusil laser."
+  },
+  {
+   "id": "ammo_shell",
+   "name": "Cartouches à impulsion",
+   "category": "ammo",
+   "stack": 999,
+   "description": "Munitions du fusil à impulsions."
+  },
+  {
+   "id": "ammo_rail",
+   "name": "Projectiles de rail",
+   "category": "ammo",
+   "stack": 999,
+   "description": "Munitions du fusil à rail."
+  },
+  {
+   "id": "ammo_rocket",
+   "name": "Roquettes",
+   "category": "ammo",
+   "stack": 999,
+   "description": "Munitions du lance-roquettes."
+  },
+  {
+   "id": "mat_wood",
+   "name": "Bois",
+   "category": "material",
+   "stack": 999,
+   "description": "Matériau de construction rapide. Récolté sur les arbres (outil de récolte, touche 0)."
+  },
+  {
+   "id": "mat_stone",
+   "name": "Pierre",
+   "category": "material",
+   "stack": 999,
+   "description": "Matériau de construction solide. Récolté sur les rochers."
+  },
+  {
+   "id": "mat_metal",
+   "name": "Métal",
+   "category": "material",
+   "stack": 999,
+   "description": "Matériau de construction le plus résistant. Fabriqué à partir de minerai."
   }
  ],
  "recipes": [
@@ -472,6 +556,104 @@
     "ore_metal": 4,
     "fiber": 4,
     "mineral_silicate": 2
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_ammo_cell",
+   "output": {
+    "item": "ammo_cell",
+    "count": 30
+   },
+   "ingredients": {
+    "crystal_energy": 1,
+    "ore_metal": 1
+   },
+   "station": "hand"
+  },
+  {
+   "id": "craft_ammo_shell",
+   "output": {
+    "item": "ammo_shell",
+    "count": 12
+   },
+   "ingredients": {
+    "ore_metal": 2
+   },
+   "station": "hand"
+  },
+  {
+   "id": "craft_ammo_rail",
+   "output": {
+    "item": "ammo_rail",
+    "count": 6
+   },
+   "ingredients": {
+    "crystal_energy": 1,
+    "electronic_part": 1
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_ammo_rocket",
+   "output": {
+    "item": "ammo_rocket",
+    "count": 2
+   },
+   "ingredients": {
+    "ore_metal": 2,
+    "crystal_energy": 2,
+    "electronic_part": 1
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_mat_metal",
+   "output": {
+    "item": "mat_metal",
+    "count": 20
+   },
+   "ingredients": {
+    "ore_metal": 2
+   },
+   "station": "hand"
+  },
+  {
+   "id": "craft_weapon_pulse_shotgun",
+   "output": {
+    "item": "weapon_pulse_shotgun",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 6,
+    "electronic_part": 2,
+    "crystal_energy": 1
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_weapon_rail_sniper",
+   "output": {
+    "item": "weapon_rail_sniper",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 6,
+    "electronic_part": 4,
+    "rare_crystal": 1
+   },
+   "station": "lab"
+  },
+  {
+   "id": "craft_weapon_rocket_launcher",
+   "output": {
+    "item": "weapon_rocket_launcher",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 10,
+    "electronic_part": 4,
+    "crystal_energy": 3
    },
    "station": "workbench"
   }

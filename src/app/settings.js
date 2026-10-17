@@ -12,7 +12,8 @@ export const DEFAULT_SETTINGS = {
   quality: 'medium',
   volume: 0.6,
   difficulty: 'normal',
-  bindings: null
+  bindings: null,
+  skin: null
 };
 
 const KEY = 'genesis.settings.v1';
@@ -29,7 +30,8 @@ export function loadSettings(storage) {
       quality: QUALITY_PRESETS[data.quality] ? data.quality : DEFAULT_SETTINGS.quality,
       volume: Math.min(1, Math.max(0, Number(data.volume ?? DEFAULT_SETTINGS.volume))),
       difficulty: ['easy', 'normal', 'hard'].includes(data.difficulty) ? data.difficulty : DEFAULT_SETTINGS.difficulty,
-      bindings: data.bindings && typeof data.bindings === 'object' ? data.bindings : null
+      bindings: data.bindings && typeof data.bindings === 'object' ? data.bindings : null,
+      skin: typeof data.skin === 'string' ? data.skin : null
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

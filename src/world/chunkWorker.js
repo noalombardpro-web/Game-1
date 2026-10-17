@@ -10,13 +10,13 @@ self.onmessage = (event) => {
   const msg = event.data;
   if (msg.type !== 'chunk') return;
   try {
-    if (!terrain || terrain.seed !== msg.seed) {
-      terrain = createTerrain(msg.seed, content.biomeRules);
+    if (!terrain || terrain.seed !== msg.seed || terrain.climateShift !== (msg.climateShift ?? 0)) {
+      terrain = createTerrain(msg.seed, content.biomeRules, { climateShift: msg.climateShift ?? 0 });
     }
     const payload = generateChunk(terrain, content, msg);
     const transfers = [
       payload.heights.buffer, payload.normals.buffer, payload.colors.buffer,
-      payload.biomeIds.buffer, payload.colliders.buffer,
+      payload.biomeIds.buffer, payload.surface.buffer, payload.colliders.buffer, payload.colliderKinds.buffer,
       ...Object.values(payload.veg).map((arr) => arr.buffer)
     ];
     self.postMessage({ type: 'chunk', requestId: msg.requestId, payload }, transfers);
