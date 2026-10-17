@@ -16,12 +16,15 @@ export const VEG_STRIDE = 8;
 /** Collider record layout: x, z, radius. */
 export const COLLIDER_STRIDE = 3;
 
-const COLLIDER_RADIUS = { pine: 0.32, broadleaf: 0.5, palm: 0.22, cactus: 0.38, rock: 0.9 };
+const COLLIDER_RADIUS = {
+  pine: 0.32, broadleaf: 0.5, palm: 0.22, cactus: 0.38, rock: 0.9, deadtree: 0.3, icespike: 0.5, spire: 1.2, lavarock: 0.8
+};
 const SCALE_RANGE = {
   pine: [0.8, 1.35], broadleaf: [0.8, 1.3], palm: [0.85, 1.25], cactus: [0.7, 1.3],
-  shrub: [0.7, 1.3], fern: [0.8, 1.2], grass: [0.8, 1.3], rock: [0.5, 1.6]
+  shrub: [0.7, 1.3], fern: [0.8, 1.2], grass: [0.8, 1.3], rock: [0.5, 1.6],
+  kelp: [0.7, 1.5], coral: [0.7, 1.4], deadtree: [0.8, 1.3], icespike: [0.6, 1.6], spire: [0.8, 1.8], lavarock: [0.5, 1.5]
 };
-const WATER_PLANTS = new Set(['grass', 'fern']);
+const WATER_PLANTS = new Set(['grass', 'fern', 'kelp', 'coral', 'rock']);
 
 /** Converts '#rrggbb' to linear RGB floats. */
 export function hexToLinear(hex) {
@@ -33,6 +36,7 @@ export function hexToLinear(hex) {
 const ROCK = hexToLinear('#6b655c');
 const SNOW = hexToLinear('#eef3f7');
 const MUD = hexToLinear('#2b281f');
+const LAVA = hexToLinear('#ff5a14');
 
 /**
  * @param terrain  object returned by createTerrain
@@ -53,6 +57,7 @@ export function generateChunk(terrain, content, req) {
   const normals = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const biomeIds = new Uint8Array(count);
+  const volcano = new Float32Array(count);
   const biomes = content.biomes;
 
   // Pass 1: heights and biome per vertex.
@@ -61,9 +66,10 @@ export function generateChunk(terrain, content, req) {
       const x = ox + i * step;
       const z = oz + j * step;
       const sample = terrain.sample(x, z);
-      const idx = terrain.classify(sample.h, sample.temp, sample.moist);
+      const idx = terrain.classify(sample);
       heights[j * side + i] = sample.h;
       biomeIds[j * side + i] = idx;
+      volcano[j * side + i] = sample.vol;
     }
   }
 
@@ -102,7 +108,13 @@ export function generateChunk(terrain, content, req) {
         g += (SNOW[1] - g) * snow;
         b += (SNOW[2] - b) * snow;
       }
-      if (h < WATER_LEVEL) {
+      if (biome.lava) {
+        const glow = smoothstep(0.84, 0.95, volcano[k]);
+        r += (LAVA[0] - r) * glow;
+        g += (LAVA[1] - g) * glow;
+        b += (LAVA[2] - b) * glow;
+      }
+      if (h < WATER_LEVEL && !biome.marine) {
         const submerged = smoothstep(WATER_LEVEL, WATER_LEVEL - 4, h);
         r += (MUD[0] - r) * submerged;
         g += (MUD[1] - g) * submerged;
@@ -189,7 +201,7 @@ function populateResources(content, result, rng) {
     const x = result.origin[0] + 4 + rng() * (CHUNK_SIZE - 8);
     const z = result.origin[1] + 4 + rng() * (CHUNK_SIZE - 8);
     const k = gridIndex(result, x, z);
-    if (result.heights[k] < WATER_LEVEL + 0.5 || result.normals[k * 3 + 1] < 0.7) continue;
+    if ((result.heights[k] < WATER_LEVEL + 0.5 && !biome.marine) || result.normals[k * 3 + 1] < 0.7) continue;
     let roll = rng() * total;
     let item = table[0][0];
     for (const [id, w] of table) {
@@ -198,6 +210,13 @@ function populateResources(content, result, rng) {
     nodes.push({ id: `${result.cx}:${result.cz}:${i}`, item, x, y: result.heights[k], z, yaw: rng() * Math.PI * 2 });
   }
   return nodes;
+}
+
+/** Where a species may live: land (default), shallow water, or open sea (deep water). */
+export function habitatAllows(species, groundHeight) {
+  if (species.habitat === 'sea') return groundHeight < WATER_LEVEL - 6;
+  if (species.habitat === 'water') return groundHeight < WATER_LEVEL + 0.5;
+  return groundHeight >= WATER_LEVEL + 0.5;
 }
 
 function populateFauna(content, result, rng) {
@@ -217,17 +236,15 @@ function populateFauna(content, result, rng) {
   const species = content.speciesById[choice.species];
   if (!species) return spawns;
   const k = gridIndex(result, cxw, czw);
-  if (result.heights[k] < WATER_LEVEL + 0.5 && species.habitat !== 'water') return spawns;
+  if (!habitatAllows(species, result.heights[k])) return spawns;
   const group = species.social.min + Math.floor(rng() * (species.social.max - species.social.min + 1));
   const spread = Math.max(2, species.social.radius * 0.5);
   for (let m = 0; m < group; m++) {
-    spawns.push({
-      id: `${result.cx}:${result.cz}:${choice.species}:${m}`,
-      species: choice.species,
-      x: cxw + (rng() - 0.5) * spread * 2,
-      z: czw + (rng() - 0.5) * spread * 2,
-      yaw: rng() * Math.PI * 2
-    });
+    const x = cxw + (rng() - 0.5) * spread * 2;
+    const z = czw + (rng() - 0.5) * spread * 2;
+    const yaw = rng() * Math.PI * 2;
+    if (!habitatAllows(species, result.heights[gridIndex(result, x, z)])) continue;
+    spawns.push({ id: `${result.cx}:${result.cz}:${choice.species}:${m}`, species: choice.species, x, z, yaw });
   }
   return spawns;
 }

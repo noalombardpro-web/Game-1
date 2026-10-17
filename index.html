@@ -74,7 +74,7 @@
     .toast.danger { border-color: var(--danger); }
     .toast.good { border-color: #7dff9f; }
     @keyframes fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
-    #rover-hud { position: absolute; right: 14px; bottom: 170px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 0.85em; display: flex; flex-direction: column; gap: 3px; }
+    #vehicle-hud { position: absolute; right: 14px; bottom: 170px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 0.85em; display: flex; flex-direction: column; gap: 3px; }
     #perf { position: absolute; right: 14px; top: 14px; background: rgba(0,0,0,0.6); padding: 6px 8px; border-radius: 6px; font: 11px/1.4 ui-monospace, monospace; white-space: pre; color: #bff; }
     #damage { position: absolute; inset: 0; box-shadow: inset 0 0 120px 40px rgba(255, 40, 40, 0.9); opacity: 0; transition: opacity 0.1s; }
 
@@ -102,7 +102,7 @@
       #status { width: calc(100vw - 28px); }
       #scan-card { left: 14px; right: 14px; width: auto; top: auto; bottom: 170px; }
       #radar { width: 110px; height: 110px; }
-      #rover-hud { bottom: 130px; }
+      #vehicle-hud { bottom: 130px; }
       #compass { width: calc(100vw - 28px); top: 150px; }
       #objective { top: 196px; }
     }
@@ -140,6 +140,7 @@
       <div class="bar"><span>Intégrité</span><div class="track"><div class="fill" id="bar-integrity"></div></div><span id="val-integrity"></span></div>
       <div class="stat-row"><span id="temp">— °C</span><span id="weather">—</span></div>
       <div class="stat-row"><span id="biome">—</span><span id="clock">—</span></div>
+      <div class="stat-row"><span>Outils <b id="tool">100</b> %</span><span id="depth"></span></div>
     </div>
     <div id="compass"><div id="compass-strip"></div></div>
     <div id="objective"></div>
@@ -148,7 +149,7 @@
     <div id="prompt" class="hidden"></div>
     <div id="cross"></div>
     <canvas id="radar" width="150" height="150"></canvas>
-    <div id="rover-hud" class="hidden"><span id="rover-speed"></span><span id="rover-energy"></span><span id="rover-hull"></span></div>
+    <div id="vehicle-hud" class="hidden"><b id="vehicle-name"></b><span id="vehicle-speed"></span><span id="vehicle-extra"></span><span id="vehicle-energy"></span><span id="vehicle-hull"></span></div>
     <div id="toasts"></div>
     <div id="perf" class="hidden"></div>
     <div id="damage"></div>

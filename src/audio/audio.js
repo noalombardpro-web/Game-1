@@ -22,7 +22,10 @@ export class GameAudio {
     const ctx = this.ctx;
     this.master = ctx.createGain();
     this.master.gain.value = this.volume;
-    this.master.connect(ctx.destination);
+    this.muffle = ctx.createBiquadFilter();
+    this.muffle.type = 'lowpass';
+    this.muffle.frequency.value = 20000;
+    this.master.connect(this.muffle).connect(ctx.destination);
     this.noise = this.createNoiseBuffer(2);
 
     this.wind = this.loopNoise(420, 'lowpass', 0.0);
@@ -84,6 +87,18 @@ export class GameAudio {
     src.connect(filter).connect(gain).connect(this.master);
     src.start();
     return gain;
+  }
+
+  /** Muffles every sound while the listener is underwater. */
+  setUnderwater(depth) {
+    if (!this.ctx) return;
+    const target = depth > 0 ? Math.max(350, 1400 - depth * 25) : 20000;
+    this.muffle.frequency.setTargetAtTime(target, this.ctx.currentTime, 0.15);
+  }
+
+  playSplash(power = 1) {
+    this.burst(900, 0.18 * Math.min(1.5, power), 0.35, 'bandpass');
+    this.burst(300, 0.15, 0.5, 'lowpass');
   }
 
   setVolume(volume) {

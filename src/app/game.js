@@ -14,8 +14,8 @@ import { Player } from '../entities/player.js';
 import { CameraRig } from '../entities/cameraRig.js';
 import { CreatureManager } from '../entities/creatures.js';
 import { EnemyManager } from '../entities/enemies.js';
-import { Rover } from '../entities/rover.js';
-import { Effects } from '../entities/effects.js';
+import { VehicleManager } from '../vehicles/vehicle.js';
+import { Effects, Bubbles } from '../entities/effects.js';
 import { Inventory } from '../systems/inventory.js';
 import { Missions } from '../systems/missions.js';
 import { RobotState, thermalTarget } from '../systems/survival.js';
@@ -147,7 +147,8 @@ export class Game {
       weatherCurrent: { rain: this.weather.current.rain, snow: this.weather.current.snow, sand: this.weather.current.sand, fog: this.weather.current.fog },
       timeOfDay: this.environment.timeOfDay,
       missions: this.missions.toJSON(),
-      rover: { seated: this.rover.seated, x: this.rover.x, z: this.rover.z, speed: this.rover.speed, energy: this.rover.energy },
+      mounted: this.mounted ? { id: this.mounted.id, type: this.mounted.typeId } : null,
+      vehicles: this.vehicles.list.map((v) => ({ id: v.id, type: v.typeId, x: v.x, y: v.y, z: v.z, speed: v.speed, energy: v.energy, hull: v.hull, seated: v.seated })),
       points: this.points.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z })),
       nearCreatures: this.creatures.near(this.player.pos.x, this.player.pos.z, 80).slice(0, 6).map((c) => ({
         id: c.id, species: c.species.id, x: c.x, y: c.y, z: c.z, hp: c.hp, alive: c.alive, height: c.species.size.height
@@ -199,6 +200,8 @@ export class Game {
     this.weather = new Weather(this.seed, this.content.biomesById);
     this.weatherFx = new WeatherParticles(this.scene);
     this.effects = new Effects(this.scene);
+    this.bubbles = new Bubbles(this.scene);
+    this.playerTarget = { isPlayer: true, x: 0, z: 0, alive: true };
 
     this.world = new World({
       scene: this.scene,
@@ -214,7 +217,8 @@ export class Game {
     });
     this.creatures = new CreatureManager({
       scene: this.scene, world: this.world, content: this.content, difficulty: this.difficultyTable,
-      damagePlayer: (amount) => this.damagePlayer(amount)
+      damagePlayer: (amount) => this.damagePlayer(amount),
+      foodAt: (x, z) => this.foodAt(x, z)
     });
 
     this.robot = new RobotState(data?.robot);
@@ -242,14 +246,10 @@ export class Game {
       }
     }
 
-    const roverState = data?.rover;
-    this.rover = roverState
-      ? Object.assign(new Rover(this.scene, this.world, roverState.x, roverState.z), {
-        yaw: roverState.yaw, energy: roverState.energy, hull: roverState.hull
-      })
-      : new Rover(this.scene, this.world, spawn.x + 5, spawn.z + 4);
-    this.rover.yaw = roverState?.yaw ?? 0;
-    this.rover.place();
+    this.vehicles = new VehicleManager(this.scene, this.world, this.content.vehicles);
+    this.mounted = null;
+    if (data?.vehicles?.length) this.vehicles.restore(data.vehicles);
+    else this.vehicles.add('rover', spawn.x + 5, spawn.z + 4, 0);
     this.logEntries = [];
     this.world.update(this.player.pos.x, this.player.pos.z, 8);
     this.autosaveTimer = AUTOSAVE_SECONDS;
@@ -357,7 +357,7 @@ export class Game {
       player: { x: this.player?.pos.x ?? 0, z: this.player?.pos.z ?? 0 },
       creatures: this.creatures ? this.creatures.near(this.player.pos.x, this.player.pos.z, 300).map((c) => ({ x: c.x, z: c.z, predator: c.isPredator })) : [],
       enemies: this.enemies ? this.enemies.near(this.player.pos.x, this.player.pos.z, 500) : [],
-      rover: this.rover ? { x: this.rover.x, z: this.rover.z } : null,
+      vehicles: this.vehicles ? this.vehicles.list.map((v) => ({ x: v.x, z: v.z, kind: v.kind })) : [],
       objectiveTarget: this.objectiveTarget(),
       biomeAt: (x, z) => this.biomeColorAt(x, z)
     };
@@ -367,9 +367,14 @@ export class Game {
 
   simulate(dt) {
     const player = this.player;
-    const rover = this.rover;
     const look = this.input.consumeLook();
     this.rig.applyLook(look, true);
+    const fx = this.inventory.effects;
+    Object.assign(player.modifiers, {
+      sprintBonus: fx.sprintBonus, damageReduction: fx.damageReduction, diveDepth: fx.diveDepth, swimBonus: fx.swimBonus, jumpBonus: fx.jumpBonus
+    });
+    this.playerTarget.x = player.pos.x;
+    this.playerTarget.z = player.pos.z;
     this.weaponCooldown -= dt;
     this.shotNoise = Math.max(0, this.shotNoise - dt);
     this.autosaveTimer -= dt;
@@ -380,16 +385,24 @@ export class Game {
     if (this.input.pressed('use')) this.useConsumable();
     if (this.input.isDown('fire')) this.fire();
 
-    if (rover.seated) {
-      rover.update(dt, this.input);
-      player.pos.set(rover.x, rover.y, rover.z);
+    const mounted = this.mounted;
+    const env = { windX: this.weather.wind.x, windZ: this.weather.wind.y, windStrength: this.weather.windStrength, storm: this.weather.current.storm };
+    this.inventory.externalCapacity = mounted?.cfg.capacityBonus ?? 0;
+    this.vehicles.update(dt, this.input, mounted, env);
+    if (mounted) {
+      if (this.input.pressed('lamp')) mounted.setLights(!mounted.lightsOn);
+      player.pos.set(mounted.x, mounted.y, mounted.z);
       player.model.root.visible = false;
-      player.model.place(rover.x, rover.y, rover.z, rover.yaw);
-      player.noise = rover.speed > 1 ? 0.8 : 0.2;
+      player.model.place(mounted.x, mounted.y, mounted.z, mounted.yaw);
+      player.noise = Math.abs(mounted.speed) > 1 ? 0.8 : 0.3;
+      if (mounted.disabled && !this.disabledWarned) {
+        this.disabledWarned = true;
+        this.ui.toast(`${mounted.name} hors service : descendez et réparez-le (U avec un kit de réparation).`, 'danger');
+      }
     } else {
+      this.disabledWarned = false;
       player.model.root.visible = true;
       player.update(dt, this.input, this.rig.yaw, (x, z) => this.biomeAt(x, z).id);
-      rover.update(dt, this.input);
     }
     for (const event of player.takeEvents()) this.onPlayerEvent(event);
 
@@ -408,8 +421,13 @@ export class Game {
         this.ui.toast(`Alerte météo : ${this.weather.label}.`, 'warn');
       }
     }
+    const cameraDepth = Math.max(0, WATER_LEVEL - this.rig.camera.position.y);
+    this.environment.waterDepth = cameraDepth;
     this.environment.update(dt, player.pos, this.weather, true);
-    this.weatherFx.update(dt, this.rig.camera.position, this.weather);
+    if (cameraDepth > 0) this.weatherFx.hide();
+    else this.weatherFx.update(dt, this.rig.camera.position, this.weather);
+    this.bubbles.update(dt, this.rig.camera.position, cameraDepth, WATER_LEVEL);
+    this.audio.setUnderwater(cameraDepth);
     this.windUniforms.uTime.value += dt;
     this.windUniforms.uWind.value.set(this.weather.wind.x * 0.5, this.weather.wind.y * 0.5);
     this.windUniforms.uStrength.value = 0.35 + this.weather.windStrength * 0.25;
@@ -418,7 +436,7 @@ export class Game {
       x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw: player.yaw,
       noise: Math.max(player.noise, this.shotNoise), alive: this.robot.integrity > 0, crouched: player.crouched
     };
-    this.creatures.update(dt, playerState, daylight, this.scene);
+    this.creatures.update(dt, playerState, daylight, this.scene, this.weather.severity);
     this.enemies.update(dt, playerState);
     for (const loot of this.enemies.drainLoot()) this.grant(loot.item, loot.count);
 
@@ -428,13 +446,13 @@ export class Game {
     this.audio.update(dt, {
       wind: this.weather.windStrength * 0.6,
       rain: this.weather.current.rain,
-      engine: rover.seated ? rover.engineLoad : 0,
+      engine: mounted ? mounted.engineLoad : 0,
       tension: this.enemies.enemies.some((e) => e.fsm.current === 'combat' || e.fsm.current === 'alert') ? 1 : 0,
       alarm: this.enemies.enemies.some((e) => e.fsm.current === 'alert' && e.alive)
     });
 
-    const target = rover.seated
-      ? { x: rover.x, y: rover.y, z: rover.z, height: 2.2, distance: 8, forceThird: true }
+    const target = mounted
+      ? { x: mounted.x, y: mounted.y, z: mounted.z, height: mounted.cfg.camera.height, distance: mounted.cfg.camera.distance, forceThird: mounted.typeId !== 'drone' }
       : { x: player.pos.x, y: player.pos.y, z: player.pos.z, height: player.crouched ? 1.0 : 1.5 };
     this.rig.update(dt, target, (x, z) => this.world.heightAt(x, z));
 
@@ -446,6 +464,12 @@ export class Game {
     else if (event.type === 'jump') this.audio.playJump();
     else if (event.type === 'land') this.audio.playLand(event.drop);
     else if (event.type === 'fall-damage') this.ui.toast(`Chute : intégrité −${event.amount.toFixed(0)}`, 'danger');
+    else if (event.type === 'splash') {
+      this.audio.playSplash(event.speed / 4 + 0.4);
+      this.effects.burst({ x: this.player.pos.x, y: WATER_LEVEL, z: this.player.pos.z }, '#cfefff', 1.4, 0.5);
+    } else if (event.type === 'pressure') {
+      this.ui.toast(`Pression excessive à ${event.depth.toFixed(0)} m (limite ${event.limit.toFixed(0)} m) : remontez ou installez un équipement de plongée.`, 'danger');
+    }
   }
 
   damagePlayer(amount) {
@@ -457,7 +481,7 @@ export class Game {
   }
 
   onRobotDestroyed() {
-    if (this.rover.seated) this.dismount();
+    if (this.mounted) this.dismount(true);
     this.robot.integrity = 45;
     this.robot.energy = Math.max(this.robot.energy, 35);
     this.player.spawnAt(this.checkpoint.x, this.checkpoint.z);
@@ -468,21 +492,31 @@ export class Game {
 
   interact() {
     const p = this.player.pos;
-    if (this.rover.seated) {
+    if (this.mounted) {
       this.dismount();
       return;
     }
-    if (dist2d(p.x, p.z, this.rover.x, this.rover.z) < 4.2) {
-      this.mount();
+    const vehicle = this.vehicles.nearest(p.x, p.z, 5);
+    if (vehicle) {
+      this.mount(vehicle);
       return;
     }
     let nearest = null;
-    let best = INTERACT_RANGE;
+    const reach = INTERACT_RANGE + this.inventory.effects.collectRange;
+    let best = reach;
     for (const node of this.world.nodesNear(p.x, p.z)) {
       const d = dist2d(p.x, p.z, node.x, node.z);
       if (d < best) { best = d; nearest = node; }
     }
     if (nearest) {
+      this.player.playAction('collect', 0.8);
+      const tip = this.player.toolTipPosition(new THREE.Vector3());
+      this.effects.beam(tip, { x: nearest.x, y: nearest.y + 0.6, z: nearest.z }, '#ffd166', 0.3);
+      this.robot.wear(0.6 * this.inventory.effects.toolWear);
+      if (Math.random() > this.robot.toolEfficiency) {
+        this.ui.toast('Outil usé : la collecte a échoué. Réparez vos outils.', 'warn');
+        return;
+      }
       const got = this.grant(nearest.item, 1);
       if (got > 0) {
         this.world.collectNode(nearest);
@@ -509,18 +543,31 @@ export class Game {
     this.ui.setPrompt(null);
   }
 
-  mount() {
-    this.rover.seated = true;
-    this.rig.yaw = this.rover.yaw;
-    this.ui.toast('Véhicule embarqué. W/S accélérer et freiner, A/D diriger, Maj turbo, E descendre.', 'info');
+  mount(vehicle) {
+    if (vehicle.disabled) {
+      this.ui.toast(`${vehicle.name} hors service : réparez-le avec un kit de réparation (U).`, 'warn');
+      return;
+    }
+    this.mounted = vehicle;
+    vehicle.seated = true;
+    this.rig.yaw = vehicle.yaw;
+    this.ui.toast(`${vehicle.name} — ${vehicle.cfg.hint}`, 'info');
     this.audio.playChime();
   }
 
-  dismount() {
-    const at = this.rover.dismountPosition();
-    this.rover.seated = false;
-    this.rover.speed *= 0.2;
-    this.player.yaw = this.rover.yaw;
+  dismount(force = false) {
+    const vehicle = this.mounted;
+    if (!vehicle) return;
+    const exit = vehicle.canExit();
+    if (!exit.ok && !force) {
+      this.ui.toast(exit.reason, 'warn');
+      return;
+    }
+    const at = vehicle.dismountPosition();
+    vehicle.seated = false;
+    vehicle.speed *= 0.2;
+    this.mounted = null;
+    this.player.yaw = vehicle.yaw;
     this.player.spawnAt(at.x, at.z);
     this.player.model.root.visible = true;
   }
@@ -528,7 +575,13 @@ export class Game {
   /** Fires the robot's plasma weapon (auto-fire while held, with a cooldown). */
   fire() {
     if (this.weaponCooldown > 0 || this.robot.destroyed) return;
+    if (this.robot.tool <= 0) {
+      this.ui.toast('Arme hors service : réparez vos outils.', 'danger');
+      this.weaponCooldown = 1;
+      return;
+    }
     if (!this.robot.spend(1)) return;
+    this.robot.wear(0.35 * this.inventory.effects.toolWear);
     this.weaponCooldown = BOLT_COOLDOWN;
     this.shotNoise = 0.9;
     this.audio.playShot();
@@ -555,20 +608,46 @@ export class Game {
     }
     if (hit.kind === 'creature') {
       const c = hit.obj;
-      if (c.takeDamage(WEAPON.creature)) {
+      if (c.takeDamage(WEAPON.creature * this.robot.toolEfficiency, this.playerTarget)) {
         this.grant('bio_sample', 1 + this.inventory.effects.lootBonus);
         this.ui.toast(`${c.species.name} neutralisé : matériau biologique récupéré.`, 'good');
       }
-    } else if (this.enemies.hit(hit.obj, WEAPON.enemy)) {
+    } else if (this.enemies.hit(hit.obj, WEAPON.enemy * this.robot.toolEfficiency)) {
       this.ui.toast(`${hit.obj.name} détruit.`, 'good');
       this.grant('ore_metal', 1);
     }
   }
 
   useConsumable() {
+    const p = this.player.pos;
+    const needsRobot = this.robot.energy < 60 || this.robot.integrity < 70 || this.robot.tool < 55;
+    const vehicle = this.mounted ?? this.vehicles.nearest(p.x, p.z, 7);
+    if (!needsRobot && vehicle && this.serviceVehicle(vehicle)) return;
     const result = this.inventory.useConsumable(this.robot);
     this.ui.toast(result.message, result.ok ? 'good' : 'warn');
     this.refreshPanel();
+  }
+
+  /** Repairs or recharges a vehicle with a kit or a cell from the inventory. */
+  serviceVehicle(vehicle) {
+    const fx = this.inventory.effects;
+    if (vehicle.hull < vehicle.cfg.hull * 0.9 && this.inventory.remove('repair_kit', 1)) {
+      const restored = vehicle.repair(vehicle.cfg.hull * 0.5 * (1 + fx.repairBonus));
+      this.player.playAction('repair', 0.9);
+      this.effects.beam(this.player.toolTipPosition(new THREE.Vector3()), { x: vehicle.x, y: vehicle.y + 1, z: vehicle.z }, '#ff8a3d', 0.4);
+      this.ui.toast(`${vehicle.name} réparé : +${Math.round(restored)} de coque.`, 'good');
+      this.audio.playChime();
+      this.refreshPanel();
+      return true;
+    }
+    if (vehicle.energy < vehicle.cfg.energy * 0.7 && this.inventory.remove('energy_cell', 1)) {
+      const added = vehicle.recharge(vehicle.cfg.energy * 0.5);
+      this.ui.toast(`${vehicle.name} rechargé : +${Math.round(added)} d'énergie.`, 'good');
+      this.audio.playChime();
+      this.refreshPanel();
+      return true;
+    }
+    return false;
   }
 
   craft(recipeId) {
@@ -585,6 +664,8 @@ export class Game {
     const origin = this.rig.camera.position.clone();
     const dir = this.rig.forward();
     const range = SCAN_RANGE * (1 + this.inventory.effects.scanRangeBonus);
+    this.player.playAction('scan', 0.8);
+    this.robot.wear(0.5 * this.inventory.effects.toolWear);
     let best = null;
     const consider = (t, kind, obj) => {
       if (t !== null && t < range && (!best || t < best.t)) best = { t, kind, obj };
@@ -601,7 +682,9 @@ export class Game {
     for (const poi of this.points) {
       consider(raySphere(origin, dir, { x: poi.x, y: poi.y + 4, z: poi.z }, poi.radius * 0.7), 'poi', poi);
     }
-    if (!this.rover.seated) consider(raySphere(origin, dir, { x: this.rover.x, y: this.rover.y + 1, z: this.rover.z }, 2.5), 'rover', this.rover);
+    for (const v of this.vehicles.list) {
+      if (v !== this.mounted) consider(raySphere(origin, dir, { x: v.x, y: v.y + 1, z: v.z }, v.cfg.radius * 1.2), 'vehicle', v);
+    }
 
     if (!best || rayTerrain(this.world, origin, dir, best.t, 2) < best.t - 2) {
       this.ui.toast('Aucune cible scannable dans le viseur.', 'info');
@@ -639,8 +722,11 @@ export class Game {
       this.ui.showScan({ title: obj.name, body: obj.log, stats: [['Distance', `${Math.round(dist2d(this.player.pos.x, this.player.pos.z, obj.x, obj.z))} m`]] });
       if (isNew) this.addLog(`${obj.name} : ${obj.log}`);
       this.handleNotices(this.missions.notify({ type: 'scan', poi: obj.id }));
-    } else if (kind === 'rover') {
-      this.ui.showScan({ title: 'Rover d\'exploration', body: 'Véhicule tout-terrain à propulsion électrique.', stats: [['Énergie', `${Math.round(obj.energy)} %`], ['Coque', `${Math.round(obj.hull)} %`]] });
+    } else if (kind === 'vehicle') {
+      this.ui.showScan({
+        title: obj.name, body: obj.cfg.hint,
+        stats: [['Énergie', `${Math.round((obj.energy / obj.cfg.energy) * 100)} %`], ['Coque', `${Math.round((obj.hull / obj.cfg.hull) * 100)} %`], ['Vitesse max.', `${Math.round(obj.cfg.maxSpeed * 3.6)} km/h`]]
+      });
     }
     this.refreshPanel();
   }
@@ -718,16 +804,22 @@ export class Game {
 
   // ---- Queries -----------------------------------------------------------
 
+  /** Forage value of a spot for herbivores: summed density of edible vegetation in its biome. */
+  foodAt(x, z) {
+    const biome = this.biomeAt(x, z);
+    return biome.vegetation.reduce((sum, v) => sum + (['grass', 'fern', 'shrub'].includes(v.kind) ? v.perM2 : 0), 0);
+  }
+
   biomeAt(x, z) {
     const sample = this.terrain.sample(x, z);
-    const index = this.terrain.classify(sample.h, sample.temp, sample.moist);
+    const index = this.terrain.classify(sample);
     return this.content.biomes[index];
   }
 
   biomeColorAt(x, z) {
     const sample = this.terrain.sample(x, z);
     if (sample.h < WATER_LEVEL) return '#1f6f80';
-    return this.content.biomes[this.terrain.classify(sample.h, sample.temp, sample.moist)].ground;
+    return this.content.biomes[this.terrain.classify(sample)].ground;
   }
 
   clockLabel() {
@@ -742,8 +834,9 @@ export class Game {
     const target = this.objectiveTarget();
     const aiming = this.enemies.enemies.some((e) => e.alive && e.fsm.current === 'combat');
     let prompt = null;
-    if (!this.rover.seated) {
-      if (dist2d(p.x, p.z, this.rover.x, this.rover.z) < 4.2) prompt = '[E] Monter dans le rover';
+    if (!this.mounted) {
+      const near = this.vehicles.nearest(p.x, p.z, 5);
+      if (near) prompt = `[E] Monter : ${near.name}${near.disabled ? ' (hors service)' : ''}`;
       else {
         const node = this.world.nodesNear(p.x, p.z).find((n) => dist2d(p.x, p.z, n.x, n.z) < INTERACT_RANGE);
         if (node) prompt = `[E] Collecter : ${this.content.itemsById[node.item].name}`;
@@ -751,7 +844,7 @@ export class Game {
         if (!node && wreck && !this.world.collected.has(containerId(wreck))) prompt = '[E] Ouvrir le conteneur scellé';
       }
     } else {
-      prompt = '[E] Descendre du rover';
+      prompt = `[E] Descendre : ${this.mounted.name}`;
     }
     const objectiveText = this.missions.finished
       ? 'Missions principales terminées — exploration libre'
@@ -775,8 +868,12 @@ export class Game {
       prompt,
       scanning: false,
       aiming,
-      rover: this.rover.seated ? this.rover : null,
-      roverCamera: this.rover.seated,
+      vehicle: this.mounted ? {
+        name: this.mounted.name, kmh: this.mounted.kmh,
+        energy: (this.mounted.energy / this.mounted.cfg.energy) * 100, hull: (this.mounted.hull / this.mounted.cfg.hull) * 100,
+        altitude: this.mounted.kind === 'air' ? this.mounted.altitude : null,
+        depth: this.mounted.kind === 'sub' ? this.mounted.depth : null
+      } : null,
       markers,
       radar: {
         creatures: this.creatures.near(p.x, p.z, 70).map((c) => ({ x: c.x, z: c.z, predator: c.isPredator })),
@@ -786,6 +883,8 @@ export class Game {
       objectiveTarget: target,
       player: { x: p.x, z: p.z },
       yaw: this.rig.yaw,
+      tool: this.robot.tool,
+      depth: this.player.swimming ? { value: this.player.depthBelowSurface, limit: this.player.diveLimit } : null,
       perfVisible: !!this.perfVisible,
       perf: this.perfVisible ? this.profiler.snapshot() : null,
       chunks: this.world.loadedCount,
@@ -808,7 +907,7 @@ export class Game {
       missions: this.missions.toJSON(),
       codex: { species: [...this.codex.species], points: [...this.codex.points] },
       collected: [...this.world.collected],
-      rover: { x: this.rover.x, z: this.rover.z, yaw: this.rover.yaw, energy: this.rover.energy, hull: this.rover.hull },
+      vehicles: this.vehicles.toJSON(),
       clock: { timeOfDay: this.environment.timeOfDay }
     };
   }

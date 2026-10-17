@@ -20,10 +20,11 @@ export class RobotState {
     this.energy = clamp(data.energy ?? MAX_STAT, 0, MAX_STAT);
     this.integrity = clamp(data.integrity ?? MAX_STAT, 0, MAX_STAT);
     this.temperature = data.temperature ?? 20;
+    this.tool = clamp(data.tool ?? MAX_STAT, 0, MAX_STAT);
   }
 
   toJSON() {
-    return { energy: this.energy, integrity: this.integrity, temperature: this.temperature };
+    return { energy: this.energy, integrity: this.integrity, temperature: this.temperature, tool: this.tool };
   }
 
   /** Spends energy. Returns false (and does nothing) when there is not enough. */
@@ -46,6 +47,20 @@ export class RobotState {
     const taken = Math.max(0, amount * multiplier);
     this.integrity = Math.max(0, this.integrity - taken);
     return taken;
+  }
+
+  /** Wears the tools (weapon, scanner, collector). A low tool state weakens them. */
+  wear(amount) {
+    this.tool = Math.max(0, this.tool - amount);
+  }
+
+  repairTools(amount) {
+    this.tool = Math.min(MAX_STAT, this.tool + amount);
+  }
+
+  /** 1 when tools are fine, down to 0.5 when nearly worn out. */
+  get toolEfficiency() {
+    return this.tool > 40 ? 1 : 0.5 + (this.tool / 40) * 0.5;
   }
 
   repair(amount) {

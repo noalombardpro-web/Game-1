@@ -1,0 +1,46 @@
+{
+  "_comment": "Vehicle data sheets. kind: ground | air | sub. Speeds in m/s, energy and hull on a 0..max scale.",
+  "vehicles": {
+    "rover": {
+      "name": "Rover d'exploration", "kind": "ground", "maxSpeed": 24, "reverse": 6, "power": 7.5, "brake": 14, "steer": 1.5,
+      "hull": 100, "energy": 100, "energyUse": 0.5, "boostUse": 1.4, "boost": 1.6, "radius": 2.0, "wheelBase": 2.6, "track": 1.9,
+      "damageFactor": 1.0, "waterSpeed": 4, "camera": { "distance": 8, "height": 2.2 },
+      "hint": "W/S accélérer et freiner, A/D diriger, Maj turbo, E descendre."
+    },
+    "buggy": {
+      "name": "Buggy rapide", "kind": "ground", "maxSpeed": 36, "reverse": 8, "power": 11, "brake": 16, "steer": 2.1,
+      "hull": 60, "energy": 70, "energyUse": 0.8, "boostUse": 1.8, "boost": 1.5, "radius": 1.6, "wheelBase": 2.0, "track": 1.6,
+      "damageFactor": 1.6, "waterSpeed": 3, "camera": { "distance": 7, "height": 1.9 },
+      "cost": { "ore_metal": 8, "electronic_part": 4 },
+      "hint": "Léger et très rapide, mais fragile : évitez les rochers. W/S, A/D, Maj turbo."
+    },
+    "transport": {
+      "name": "Transporteur lourd", "kind": "ground", "maxSpeed": 16, "reverse": 4, "power": 4.5, "brake": 10, "steer": 0.9,
+      "hull": 220, "energy": 180, "energyUse": 0.9, "boostUse": 1.5, "boost": 1.3, "radius": 3.0, "wheelBase": 4.2, "track": 2.6,
+      "damageFactor": 0.5, "waterSpeed": 3, "capacityBonus": 60, "camera": { "distance": 11, "height": 3 },
+      "cost": { "ore_metal": 14, "electronic_part": 6, "rare_crystal": 1 },
+      "hint": "Très robuste, soute de +60 unités tant que vous le pilotez. W/S, A/D."
+    },
+    "drone": {
+      "name": "Drone de reconnaissance", "kind": "air", "maxSpeed": 28, "vertical": 9, "turn": 2.4, "accel": 14,
+      "hull": 30, "energy": 60, "energyUse": 1.0, "hoverUse": 0.5, "boost": 1.6, "radius": 0.9, "maxAltitude": 140,
+      "damageFactor": 1.4, "camera": { "distance": 6, "height": 1.2 }, "scanBonus": 0.6,
+      "cost": { "ore_metal": 3, "electronic_part": 4, "crystal_energy": 1 },
+      "hint": "W/S avancer et reculer, A/D tourner, Espace monter, C descendre, Maj turbo. V : vue embarquée. Scanner (R) plus efficace en vol."
+    },
+    "aircraft": {
+      "name": "Aéronef d'exploration", "kind": "air", "maxSpeed": 58, "vertical": 7, "turn": 1.2, "accel": 9,
+      "hull": 140, "energy": 140, "energyUse": 2.0, "hoverUse": 1.2, "boost": 1.5, "radius": 2.6, "maxAltitude": 450,
+      "damageFactor": 0.9, "bank": 0.6, "camera": { "distance": 15, "height": 3.5 },
+      "cost": { "ore_metal": 12, "electronic_part": 8, "rare_crystal": 2 },
+      "hint": "Décollage vertical : Espace monter, C descendre, W/S vitesse, A/D virages inclinés, Maj turbo. Les tempêtes secouent l'appareil."
+    },
+    "submarine": {
+      "name": "Sous-marin d'exploration", "kind": "sub", "maxSpeed": 11, "vertical": 4, "turn": 1.4, "accel": 5,
+      "hull": 160, "energy": 120, "energyUse": 0.8, "hoverUse": 0.25, "boost": 1.5, "radius": 2.2, "depthLimit": 260,
+      "damageFactor": 0.8, "camera": { "distance": 9, "height": 1.4 },
+      "cost": { "ore_metal": 10, "electronic_part": 5, "deep_pearl": 1 },
+      "hint": "Espace remonter, C plonger, W/S avancer, A/D tourner, F : phares. Ne sort pas de l'eau."
+    }
+  }
+}

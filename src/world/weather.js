@@ -11,6 +11,7 @@ export const WEATHER = {
   storm: { cloud: 1, rain: 1, snow: 0, sand: 0, fog: 0.0024, wind: 1.7, storm: true, color: '#56606b', duration: [40, 80] },
   fog: { cloud: 0.7, rain: 0, snow: 0, sand: 0, fog: 0.0048, wind: 0.2, storm: false, color: '#c6cfd6', duration: [60, 120] },
   snow: { cloud: 0.9, rain: 0, snow: 1, sand: 0, fog: 0.0024, wind: 0.9, storm: false, color: '#dfe7ef', duration: [70, 140] },
+  ashfall: { cloud: 0.8, rain: 0, snow: 0, sand: 1, fog: 0.0045, wind: 1.0, storm: false, color: '#4a4440', duration: [60, 120] },
   sandstorm: { cloud: 0.5, rain: 0, snow: 0, sand: 1, fog: 0.0060, wind: 2.2, storm: false, color: '#c9a471', duration: [45, 90] }
 };
 
@@ -85,10 +86,16 @@ export class Weather {
     return out;
   }
 
+  /** 0..1: how dangerous the current weather is for animals (storms, sand, heavy rain or snow). */
+  get severity() {
+    const c = this.current;
+    return Math.max(c.storm ? 1 : 0, c.sand > 0.5 ? 0.9 : 0, c.rain > 0.7 ? 0.6 : 0, c.snow > 0.8 ? 0.6 : 0);
+  }
+
   get label() {
     return {
       clear: 'Ciel dégagé', cloudy: 'Nuageux', rain: 'Pluie', storm: 'Orage',
-      fog: 'Brouillard', snow: 'Neige', sandstorm: 'Tempête de sable'
+      fog: 'Brouillard', snow: 'Neige', sandstorm: 'Tempête de sable', ashfall: 'Chute de cendres'
     }[this.kind];
   }
 }
@@ -139,6 +146,11 @@ export class WeatherParticles {
       this.rainBase.set([x, y, z, x, y, z], i * 6);
     }
     this.rng = rng;
+  }
+
+  /** Hides every particle system (used while the camera is underwater). */
+  hide() {
+    this.rain.visible = this.snow.visible = this.sand.visible = false;
   }
 
   /** Moves the particles with the wind and wraps them inside the box around the camera. */

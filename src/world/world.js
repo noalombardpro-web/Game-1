@@ -64,7 +64,7 @@ export class World {
     const geometry = new THREE.PlaneGeometry(6000, 6000);
     geometry.rotateX(-Math.PI / 2);
     const material = new THREE.MeshStandardMaterial({
-      color: '#1f6f80', roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.74, depthWrite: false
+      color: '#1f6f80', roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.74, depthWrite: false, side: THREE.DoubleSide
     });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.y = WATER_LEVEL;

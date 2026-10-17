@@ -32,9 +32,10 @@ export function validateSave(data) {
   if (collected.length > 20000) throw new Error('save: too many collected nodes');
   const missionState = missions ?? { index: 0, progress: {}, completed: [] };
   const codexState = codex ?? { species: [], points: [] };
-  const roverState = rover ?? null;
-  if (roverState && (!isNum(roverState.x) || !isNum(roverState.z) || !isNum(roverState.energy, 0, 100) || !isNum(roverState.hull, 0, 100))) {
-    throw new Error('save: bad rover');
+  const vehicleList = Array.isArray(data.vehicles) ? data.vehicles : rover ? [{ type: 'rover', ...rover }] : [];
+  if (vehicleList.length > 40) throw new Error('save: too many vehicles');
+  for (const v of vehicleList) {
+    if (typeof v.type !== 'string' || !isNum(v.x) || !isNum(v.z) || !isNum(v.energy, 0, 1000) || !isNum(v.hull, 0, 1000)) throw new Error('save: bad vehicle');
   }
   const checkpoint = data.checkpoint && isNum(data.checkpoint.x) && isNum(data.checkpoint.z)
     ? { x: data.checkpoint.x, z: data.checkpoint.z }
@@ -46,12 +47,12 @@ export function validateSave(data) {
     checkpoint,
     difficulty: ['easy', 'normal', 'hard'].includes(difficulty) ? difficulty : 'normal',
     player: { x: player.x, z: player.z, yaw: player.yaw },
-    robot: { energy: robot.energy, integrity: robot.integrity, temperature: isNum(robot.temperature, -100, 150) ? robot.temperature : 20 },
+    robot: { energy: robot.energy, integrity: robot.integrity, temperature: isNum(robot.temperature, -100, 150) ? robot.temperature : 20, tool: isNum(robot.tool, 0, 100) ? robot.tool : 100 },
     inventory: { counts: inventory.counts, modules: inventory.modules ?? {} },
     missions: missionState,
     codex: { species: codexState.species ?? [], points: codexState.points ?? [] },
     collected,
-    rover: roverState,
+    vehicles: vehicleList,
     clock: { timeOfDay: clock.timeOfDay },
     extra: rest
   };

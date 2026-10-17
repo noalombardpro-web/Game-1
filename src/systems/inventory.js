@@ -1,7 +1,10 @@
 // Inventory (capacity-limited stacks), installed robot modules and crafting.
 // Pure logic; the UI reads and calls these methods.
 
-export const MODULE_SLOTS = ['propulsion', 'armor', 'sensors', 'survival', 'science'];
+export const MODULE_SLOTS = ['propulsion', 'armor', 'sensors', 'survival', 'science', 'diving', 'tools', 'storage'];
+
+/** Crafting stations, from the portable kit to the research lab. A higher station can craft lower recipes. */
+export const STATION_RANK = { hand: 0, workbench: 1, lab: 2 };
 
 export class Inventory {
   /**
@@ -11,7 +14,9 @@ export class Inventory {
   constructor(content, saved = {}) {
     this.items = content.itemsById;
     this.recipes = content.recipes;
-    this.capacity = content.capacity;
+    this.baseCapacity = content.capacity;
+    /** Extra room provided by the vehicle currently driven (heavy transport hold). */
+    this.externalCapacity = 0;
     this.counts = {};
     this.modules = Object.fromEntries(MODULE_SLOTS.map((slot) => [slot, null]));
     for (const [id, n] of Object.entries(saved.counts ?? {})) {
@@ -21,6 +26,10 @@ export class Inventory {
       const id = saved.modules?.[slot];
       if (id && this.items[id]?.slot === slot) this.modules[slot] = id;
     }
+  }
+
+  get capacity() {
+    return this.baseCapacity + this.effects.capacityBonus + this.externalCapacity;
   }
 
   get used() {
@@ -58,13 +67,18 @@ export class Inventory {
     return true;
   }
 
-  canCraft(recipe) {
+  /** True when the ingredients are in the inventory and `station` (best nearby station) is good enough. */
+  canCraft(recipe, station = 'lab') {
+    if ((STATION_RANK[recipe.station ?? 'hand'] ?? 0) > (STATION_RANK[station] ?? 0)) return false;
     return Object.entries(recipe.ingredients).every(([id, n]) => this.count(id) >= n);
   }
 
   /** Crafts a recipe. Modules are installed directly. Returns { ok, message }. */
-  craft(recipe) {
-    if (!this.canCraft(recipe)) return { ok: false, message: 'Ressources insuffisantes.' };
+  craft(recipe, station = 'lab') {
+    if ((STATION_RANK[recipe.station ?? 'hand'] ?? 0) > (STATION_RANK[station] ?? 0)) {
+      return { ok: false, message: `Il faut un ${recipe.station === 'lab' ? 'laboratoire' : 'établi'} à proximité.` };
+    }
+    if (!this.canCraft(recipe, station)) return { ok: false, message: 'Ressources insuffisantes.' };
     const output = recipe.output;
     const outputItem = this.items[output.item];
     const freeSpace = this.capacity - this.used + Object.entries(recipe.ingredients).reduce((s, [, n]) => s + n, 0);
@@ -82,7 +96,10 @@ export class Inventory {
 
   /** Aggregated effects of installed modules. */
   get effects() {
-    const fx = { sprintBonus: 0, damageReduction: 0, scanRangeBonus: 0, thermalFactor: 1, lootBonus: 0 };
+    const fx = {
+      sprintBonus: 0, damageReduction: 0, scanRangeBonus: 0, thermalFactor: 1, lootBonus: 0,
+      diveDepth: 0, swimBonus: 0, jumpBonus: 0, repairBonus: 0, collectRange: 0, toolWear: 1, capacityBonus: 0
+    };
     for (const id of Object.values(this.modules)) {
       if (!id) continue;
       const effect = this.items[id].effect ?? {};
@@ -91,6 +108,10 @@ export class Inventory {
       if (effect.scanRangeBonus) fx.scanRangeBonus += effect.scanRangeBonus;
       if (effect.thermalFactor) fx.thermalFactor = Math.min(fx.thermalFactor, effect.thermalFactor);
       if (effect.lootBonus) fx.lootBonus += effect.lootBonus;
+      for (const key of ['diveDepth', 'swimBonus', 'jumpBonus', 'repairBonus', 'collectRange', 'capacityBonus']) {
+        if (effect[key]) fx[key] += effect[key];
+      }
+      if (effect.toolWear) fx.toolWear = Math.min(fx.toolWear, effect.toolWear);
     }
     return fx;
   }
@@ -102,12 +123,14 @@ export class Inventory {
   useConsumable(robot) {
     const wantsEnergy = robot.energy < 60 && this.count('energy_cell') > 0;
     const wantsRepair = robot.integrity < 70 && this.count('repair_kit') > 0;
-    const id = wantsEnergy ? 'energy_cell' : wantsRepair ? 'repair_kit' : null;
+    const wantsTools = robot.tool < 55 && this.count('repair_tool_kit') > 0;
+    const id = wantsEnergy ? 'energy_cell' : wantsRepair ? 'repair_kit' : wantsTools ? 'repair_tool_kit' : null;
     if (!id) return { ok: false, message: 'Aucun consommable utile.' };
     const effect = this.items[id].effect;
     this.remove(id, 1);
     if (effect.energy) robot.recharge(effect.energy);
-    if (effect.integrity) robot.repair(effect.integrity);
+    if (effect.integrity) robot.repair(effect.integrity * (1 + this.effects.repairBonus));
+    if (effect.tools) robot.repairTools(effect.tools * (1 + this.effects.repairBonus));
     return { ok: true, message: `${this.items[id].name} utilisé.` };
   }
 

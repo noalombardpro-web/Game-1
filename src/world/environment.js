@@ -28,6 +28,7 @@ export class Environment {
     this.timeOfDay = 0.32;
     this.flash = 0;
     this.cloudCover = 0.2;
+    this.waterDepth = 0;
 
     this.sky = new Sky();
     this.sky.scale.setScalar(SKY_RADIUS);
@@ -171,6 +172,20 @@ export class Environment {
     fog.density = weather.current.fog * (storm ? 1.1 : 1);
     this.renderer.setClearColor(fog.color, 1);
 
+    // Underwater: light and colour are absorbed with depth, the sky disappears.
+    const depth = this.waterDepth;
+    const under = depth > 0;
+    this.sky.visible = !under;
+    this.clouds.visible = !under;
+    if (under) {
+      const k = clamp(depth / 55, 0, 1);
+      fog.color.set('#2f8aa0').lerp(new THREE.Color('#02070d'), k).multiplyScalar(0.35 + 0.65 * dayness);
+      fog.density = 0.03 + depth * 0.0017;
+      this.sun.intensity *= Math.exp(-0.07 * depth);
+      this.hemi.intensity *= 0.3 + 0.7 * Math.exp(-0.05 * depth);
+      this.stars.material.opacity = 0;
+      this.renderer.setClearColor(fog.color, 1);
+    }
     this.sky.position.copy(focus);
     this.clouds.position.set(focus.x, 0, focus.z);
     for (const cloud of this.cloudSprites) {

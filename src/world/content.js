@@ -7,6 +7,7 @@ import worldData from '../../data/world.json';
 import enemiesData from '../../data/enemies.json';
 import missionsData from '../../data/missions.json';
 import controlsData from '../../data/controls.json';
+import vehiclesData from '../../data/vehicles.json';
 import { hexToLinear } from './chunkGenerator.js';
 
 /** Returns a fresh, validated copy of all content tables. */
@@ -34,6 +35,7 @@ export function loadContent() {
     world: worldData,
     enemies: enemiesData,
     missions: missionsData.missions,
-    controls: controlsData
+    controls: controlsData,
+    vehicles: vehiclesData.vehicles
   };
 }

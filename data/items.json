@@ -1,27 +1,480 @@
 {
-  "items": [
-    { "id": "ore_metal", "name": "Minerai métallique", "category": "resource", "stack": 99, "description": "Alliages bruts pour la fabrication." },
-    { "id": "mineral_silicate", "name": "Silicate minéral", "category": "resource", "stack": 99, "description": "Matière première des composites." },
-    { "id": "crystal_energy", "name": "Cristal énergétique", "category": "resource", "stack": 50, "description": "Stocke l'énergie. Source des cellules." },
-    { "id": "electronic_part", "name": "Composant électronique", "category": "resource", "stack": 50, "description": "Circuits récupérés sur les épaves." },
-    { "id": "bio_sample", "name": "Matériau biologique", "category": "resource", "stack": 50, "description": "Tissu analysable, base des kits de réparation." },
-    { "id": "alien_sample", "name": "Échantillon extraterrestre", "category": "resource", "stack": 20, "description": "Matière d'origine inconnue. Rare." },
-    { "id": "energy_cell", "name": "Cellule d'énergie", "category": "consumable", "stack": 10, "description": "Restaure 50 % d'énergie.", "effect": { "energy": 50 } },
-    { "id": "repair_kit", "name": "Kit de réparation", "category": "consumable", "stack": 10, "description": "Restaure 40 points d'intégrité.", "effect": { "integrity": 40 } },
-    { "id": "module_propulsion", "name": "Module propulsion", "category": "module", "slot": "propulsion", "stack": 1, "description": "+15 % de vitesse de course.", "effect": { "sprintBonus": 0.15 } },
-    { "id": "module_armor", "name": "Module blindage", "category": "module", "slot": "armor", "stack": 1, "description": "-20 % de dégâts reçus.", "effect": { "damageReduction": 0.2 } },
-    { "id": "module_sensors", "name": "Module capteurs", "category": "module", "slot": "sensors", "stack": 1, "description": "+35 % de portée de scan.", "effect": { "scanRangeBonus": 0.35 } },
-    { "id": "module_survival", "name": "Module survie", "category": "module", "slot": "survival", "stack": 1, "description": "Réduit la consommation thermique de moitié.", "effect": { "thermalFactor": 0.5 } },
-    { "id": "module_science", "name": "Module scientifique", "category": "module", "slot": "science", "stack": 1, "description": "+1 objet par conteneur analysé.", "effect": { "lootBonus": 1 } }
-  ],
-  "recipes": [
-    { "id": "craft_energy_cell", "output": { "item": "energy_cell", "count": 1 }, "ingredients": { "crystal_energy": 1, "mineral_silicate": 1 } },
-    { "id": "craft_repair_kit", "output": { "item": "repair_kit", "count": 1 }, "ingredients": { "ore_metal": 1, "bio_sample": 2 } },
-    { "id": "craft_module_propulsion", "output": { "item": "module_propulsion", "count": 1 }, "ingredients": { "ore_metal": 3, "electronic_part": 2 } },
-    { "id": "craft_module_armor", "output": { "item": "module_armor", "count": 1 }, "ingredients": { "ore_metal": 4, "mineral_silicate": 2 } },
-    { "id": "craft_module_sensors", "output": { "item": "module_sensors", "count": 1 }, "ingredients": { "electronic_part": 2, "crystal_energy": 1 } },
-    { "id": "craft_module_survival", "output": { "item": "module_survival", "count": 1 }, "ingredients": { "electronic_part": 1, "bio_sample": 2, "crystal_energy": 1 } },
-    { "id": "craft_module_science", "output": { "item": "module_science", "count": 1 }, "ingredients": { "electronic_part": 2, "mineral_silicate": 2 } }
-  ],
-  "capacity": 80
+ "items": [
+  {
+   "id": "ore_metal",
+   "name": "Minerai métallique",
+   "category": "resource",
+   "stack": 99,
+   "description": "Alliages bruts pour la fabrication."
+  },
+  {
+   "id": "mineral_silicate",
+   "name": "Silicate minéral",
+   "category": "resource",
+   "stack": 99,
+   "description": "Matière première des composites."
+  },
+  {
+   "id": "crystal_energy",
+   "name": "Cristal énergétique",
+   "category": "resource",
+   "stack": 50,
+   "description": "Stocke l'énergie. Source des cellules."
+  },
+  {
+   "id": "electronic_part",
+   "name": "Composant électronique",
+   "category": "resource",
+   "stack": 50,
+   "description": "Circuits récupérés sur les épaves."
+  },
+  {
+   "id": "bio_sample",
+   "name": "Matériau biologique",
+   "category": "resource",
+   "stack": 50,
+   "description": "Tissu analysable, base des kits de réparation."
+  },
+  {
+   "id": "alien_sample",
+   "name": "Échantillon extraterrestre",
+   "category": "resource",
+   "stack": 20,
+   "description": "Matière d'origine inconnue. Rare."
+  },
+  {
+   "id": "energy_cell",
+   "name": "Cellule d'énergie",
+   "category": "consumable",
+   "stack": 10,
+   "description": "Restaure 50 % d'énergie.",
+   "effect": {
+    "energy": 50
+   }
+  },
+  {
+   "id": "repair_kit",
+   "name": "Kit de réparation",
+   "category": "consumable",
+   "stack": 10,
+   "description": "Restaure 40 points d'intégrité.",
+   "effect": {
+    "integrity": 40
+   }
+  },
+  {
+   "id": "module_propulsion",
+   "name": "Module propulsion",
+   "category": "module",
+   "slot": "propulsion",
+   "stack": 1,
+   "description": "+15 % de vitesse de course.",
+   "effect": {
+    "sprintBonus": 0.15
+   }
+  },
+  {
+   "id": "module_armor",
+   "name": "Module blindage",
+   "category": "module",
+   "slot": "armor",
+   "stack": 1,
+   "description": "-20 % de dégâts reçus.",
+   "effect": {
+    "damageReduction": 0.2
+   }
+  },
+  {
+   "id": "module_sensors",
+   "name": "Module capteurs",
+   "category": "module",
+   "slot": "sensors",
+   "stack": 1,
+   "description": "+35 % de portée de scan.",
+   "effect": {
+    "scanRangeBonus": 0.35
+   }
+  },
+  {
+   "id": "module_survival",
+   "name": "Module survie",
+   "category": "module",
+   "slot": "survival",
+   "stack": 1,
+   "description": "Réduit la consommation thermique de moitié.",
+   "effect": {
+    "thermalFactor": 0.5
+   }
+  },
+  {
+   "id": "module_science",
+   "name": "Module scientifique",
+   "category": "module",
+   "slot": "science",
+   "stack": 1,
+   "description": "+1 objet par conteneur analysé.",
+   "effect": {
+    "lootBonus": 1
+   }
+  },
+  {
+   "id": "fiber",
+   "name": "Fibre végétale",
+   "category": "resource",
+   "stack": 99,
+   "description": "Fibres tressées pour les structures légères."
+  },
+  {
+   "id": "rare_crystal",
+   "name": "Cristal rare",
+   "category": "resource",
+   "stack": 30,
+   "rarity": "rare",
+   "description": "Cristal à haute densité énergétique des cratères et des cavernes."
+  },
+  {
+   "id": "magma_core",
+   "name": "Noyau de magma",
+   "category": "resource",
+   "stack": 20,
+   "rarity": "rare",
+   "description": "Roche encore incandescente des volcans, source d'énergie intense."
+  },
+  {
+   "id": "cryo_shard",
+   "name": "Éclat cryogénique",
+   "category": "resource",
+   "stack": 20,
+   "rarity": "rare",
+   "description": "Glace stabilisée des régions polaires. Isolant thermique exceptionnel."
+  },
+  {
+   "id": "deep_pearl",
+   "name": "Perle abyssale",
+   "category": "resource",
+   "stack": 20,
+   "rarity": "rare",
+   "description": "Concrétion organique des grands fonds, utilisée dans les capteurs de profondeur."
+  },
+  {
+   "id": "ancient_tech",
+   "name": "Composant ancien",
+   "category": "resource",
+   "stack": 10,
+   "rarity": "rare",
+   "description": "Mécanisme d'une civilisation disparue, trouvé dans les ruines et les laboratoires."
+  },
+  {
+   "id": "repair_tool_kit",
+   "name": "Pack de réparation d'outils",
+   "category": "consumable",
+   "stack": 10,
+   "description": "Rétablit 60 points d'usure des outils.",
+   "effect": {
+    "tools": 60
+   }
+  },
+  {
+   "id": "module_propulsion_2",
+   "name": "Propulsion avancée",
+   "category": "module",
+   "slot": "propulsion",
+   "tier": 2,
+   "stack": 1,
+   "description": "+35 % de vitesse de course, saut renforcé.",
+   "effect": {
+    "sprintBonus": 0.35,
+    "jumpBonus": 0.2
+   }
+  },
+  {
+   "id": "module_armor_2",
+   "name": "Blindage composite",
+   "category": "module",
+   "slot": "armor",
+   "tier": 2,
+   "stack": 1,
+   "description": "-38 % de dégâts reçus.",
+   "effect": {
+    "damageReduction": 0.38
+   }
+  },
+  {
+   "id": "module_sensors_2",
+   "name": "Capteurs longue portée",
+   "category": "module",
+   "slot": "sensors",
+   "tier": 2,
+   "stack": 1,
+   "description": "+90 % de portée de scan.",
+   "effect": {
+    "scanRangeBonus": 0.9
+   }
+  },
+  {
+   "id": "module_survival_2",
+   "name": "Isolation cryogénique",
+   "category": "module",
+   "slot": "survival",
+   "tier": 2,
+   "stack": 1,
+   "description": "Réduit la consommation thermique de 75 %.",
+   "effect": {
+    "thermalFactor": 0.25
+   }
+  },
+  {
+   "id": "module_dive",
+   "name": "Équipement de plongée",
+   "category": "module",
+   "slot": "diving",
+   "stack": 1,
+   "description": "Profondeur max. +40 m, nage +30 %.",
+   "effect": {
+    "diveDepth": 40,
+    "swimBonus": 0.3
+   }
+  },
+  {
+   "id": "module_dive_2",
+   "name": "Caisson abyssal",
+   "category": "module",
+   "slot": "diving",
+   "tier": 2,
+   "stack": 1,
+   "description": "Profondeur max. +100 m, nage +60 %.",
+   "effect": {
+    "diveDepth": 100,
+    "swimBonus": 0.6
+   }
+  },
+  {
+   "id": "module_toolkit",
+   "name": "Kit d'outils de précision",
+   "category": "module",
+   "slot": "tools",
+   "stack": 1,
+   "description": "Réparations 50 % plus efficaces, collecte à 1,5 m de plus, usure des outils réduite.",
+   "effect": {
+    "repairBonus": 0.5,
+    "collectRange": 1.5,
+    "toolWear": 0.5
+   }
+  },
+  {
+   "id": "module_cargo",
+   "name": "Soute étendue",
+   "category": "module",
+   "slot": "storage",
+   "stack": 1,
+   "description": "+40 unités de stockage.",
+   "effect": {
+    "capacityBonus": 40
+   }
+  }
+ ],
+ "recipes": [
+  {
+   "id": "craft_energy_cell",
+   "output": {
+    "item": "energy_cell",
+    "count": 1
+   },
+   "ingredients": {
+    "crystal_energy": 1,
+    "mineral_silicate": 1
+   },
+   "station": "hand"
+  },
+  {
+   "id": "craft_repair_kit",
+   "output": {
+    "item": "repair_kit",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 1,
+    "bio_sample": 2
+   },
+   "station": "hand"
+  },
+  {
+   "id": "craft_module_propulsion",
+   "output": {
+    "item": "module_propulsion",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 3,
+    "electronic_part": 2
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_module_armor",
+   "output": {
+    "item": "module_armor",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 4,
+    "mineral_silicate": 2
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_module_sensors",
+   "output": {
+    "item": "module_sensors",
+    "count": 1
+   },
+   "ingredients": {
+    "electronic_part": 2,
+    "crystal_energy": 1
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_module_survival",
+   "output": {
+    "item": "module_survival",
+    "count": 1
+   },
+   "ingredients": {
+    "electronic_part": 1,
+    "bio_sample": 2,
+    "crystal_energy": 1
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_module_science",
+   "output": {
+    "item": "module_science",
+    "count": 1
+   },
+   "ingredients": {
+    "electronic_part": 2,
+    "mineral_silicate": 2
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_repair_tool_kit",
+   "output": {
+    "item": "repair_tool_kit",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 1,
+    "fiber": 2
+   },
+   "station": "hand"
+  },
+  {
+   "id": "craft_module_propulsion_2",
+   "output": {
+    "item": "module_propulsion_2",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 4,
+    "electronic_part": 3,
+    "rare_crystal": 1
+   },
+   "station": "lab"
+  },
+  {
+   "id": "craft_module_armor_2",
+   "output": {
+    "item": "module_armor_2",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 6,
+    "mineral_silicate": 3,
+    "magma_core": 1
+   },
+   "station": "lab"
+  },
+  {
+   "id": "craft_module_sensors_2",
+   "output": {
+    "item": "module_sensors_2",
+    "count": 1
+   },
+   "ingredients": {
+    "electronic_part": 4,
+    "deep_pearl": 1,
+    "rare_crystal": 1
+   },
+   "station": "lab"
+  },
+  {
+   "id": "craft_module_survival_2",
+   "output": {
+    "item": "module_survival_2",
+    "count": 1
+   },
+   "ingredients": {
+    "electronic_part": 2,
+    "cryo_shard": 2,
+    "bio_sample": 3
+   },
+   "station": "lab"
+  },
+  {
+   "id": "craft_module_dive",
+   "output": {
+    "item": "module_dive",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 3,
+    "electronic_part": 2,
+    "mineral_silicate": 2
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_module_dive_2",
+   "output": {
+    "item": "module_dive_2",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 5,
+    "electronic_part": 3,
+    "deep_pearl": 2
+   },
+   "station": "lab"
+  },
+  {
+   "id": "craft_module_toolkit",
+   "output": {
+    "item": "module_toolkit",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 2,
+    "electronic_part": 2,
+    "fiber": 2
+   },
+   "station": "workbench"
+  },
+  {
+   "id": "craft_module_cargo",
+   "output": {
+    "item": "module_cargo",
+    "count": 1
+   },
+   "ingredients": {
+    "ore_metal": 4,
+    "fiber": 4,
+    "mineral_silicate": 2
+   },
+   "station": "workbench"
+  }
+ ],
+ "capacity": 80
 }

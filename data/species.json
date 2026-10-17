@@ -1,78 +1,861 @@
 {
-  "_comment": "Species data sheets. archetype selects the procedural body (quadruped, biped, sauropod, flyer, aquatic). Speeds in m/s, sizes in m.",
-  "species": [
-    {
-      "id": "lumifer", "name": "Lumifer des prairies", "diet": "herbivore", "archetype": "quadruped",
-      "size": { "length": 1.5, "height": 1.0 }, "speed": { "walk": 1.4, "run": 6.5 },
-      "perception": { "sight": 40, "fov": 200, "hearing": 30 }, "temperament": "timide",
-      "social": { "min": 3, "max": 6, "radius": 18 }, "activity": "day", "hp": 40, "damage": 0,
-      "colors": { "body": "#9b7b52", "accent": "#eadcb8" },
-      "description": "Herbivore grégaire, très attentif aux bruits. Fuit en groupe au moindre danger."
-    },
-    {
-      "id": "nocturne", "name": "Nocturne bioluminescent", "diet": "herbivore", "archetype": "quadruped",
-      "size": { "length": 0.9, "height": 0.6 }, "speed": { "walk": 1.0, "run": 5.0 },
-      "perception": { "sight": 25, "fov": 220, "hearing": 22 }, "temperament": "timide",
-      "social": { "min": 1, "max": 2, "radius": 8 }, "activity": "night", "hp": 15, "damage": 0,
-      "colors": { "body": "#2a2f45", "accent": "#3ff0d0", "emissive": true },
-      "description": "Petit herbivore nocturne. Ses flancs émettent une lumière bleutée pour communiquer."
-    },
-    {
-      "id": "velox", "name": "Velox pourchasseur", "diet": "herbivore", "archetype": "biped",
-      "size": { "length": 1.2, "height": 1.1 }, "speed": { "walk": 2.2, "run": 10.5 },
-      "perception": { "sight": 45, "fov": 260, "hearing": 35 }, "temperament": "curieux",
-      "social": { "min": 2, "max": 4, "radius": 14 }, "activity": "day", "hp": 30, "damage": 0,
-      "colors": { "body": "#b1562d", "accent": "#f2c46b" },
-      "description": "Dinosaure rapide à plumage coloré. Curieux, il s'approche puis détale."
-    },
-    {
-      "id": "brachyceros", "name": "Brachycéros géant", "diet": "herbivore", "archetype": "sauropod",
-      "size": { "length": 9.0, "height": 6.0 }, "speed": { "walk": 1.0, "run": 3.0 },
-      "perception": { "sight": 60, "fov": 240, "hearing": 45 }, "temperament": "passif",
-      "social": { "min": 1, "max": 3, "radius": 25 }, "activity": "day", "hp": 400, "damage": 0,
-      "colors": { "body": "#5d6e4c", "accent": "#8fa27a" },
-      "description": "Grand herbivore à long cou. Pacifique mais dangereux s'il est acculé."
-    },
-    {
-      "id": "frigo_stag", "name": "Cervidé givré", "diet": "herbivore", "archetype": "quadruped",
-      "size": { "length": 1.8, "height": 1.6 }, "speed": { "walk": 1.5, "run": 7.0 },
-      "perception": { "sight": 50, "fov": 200, "hearing": 35 }, "temperament": "timide",
-      "social": { "min": 1, "max": 4, "radius": 15 }, "activity": "day", "hp": 60, "damage": 0,
-      "colors": { "body": "#c8cfd6", "accent": "#5b6a78" },
-      "description": "Herbivore adapté au froid, pelage épais et bois ramifiés."
-    },
-    {
-      "id": "sablier", "name": "Sablier nocturne", "diet": "herbivore", "archetype": "quadruped",
-      "size": { "length": 1.3, "height": 0.9 }, "speed": { "walk": 1.2, "run": 6.0 },
-      "perception": { "sight": 30, "fov": 180, "hearing": 40 }, "temperament": "timide",
-      "social": { "min": 1, "max": 2, "radius": 10 }, "activity": "night", "hp": 35, "damage": 0,
-      "colors": { "body": "#d8b27a", "accent": "#a5773d" },
-      "description": "Herbivore du désert. Se cache pendant la journée et s'hydrate la nuit."
-    },
-    {
-      "id": "hydrolepis", "name": "Hydrolépis amphibie", "diet": "herbivore", "archetype": "quadruped",
-      "habitat": "water", "size": { "length": 2.2, "height": 0.9 }, "speed": { "walk": 1.0, "run": 4.0 },
-      "perception": { "sight": 30, "fov": 200, "hearing": 25 }, "temperament": "timide",
-      "social": { "min": 1, "max": 3, "radius": 12 }, "activity": "day", "hp": 50, "damage": 0,
-      "colors": { "body": "#3c6e6a", "accent": "#9fd8c4" },
-      "description": "Semi-aquatique : ne quitte jamais les berges et les marais."
-    },
-    {
-      "id": "aerovol", "name": "Aérovol planeur", "diet": "herbivore", "archetype": "flyer",
-      "size": { "length": 1.2, "height": 0.4 }, "speed": { "walk": 6.0, "run": 13.0 },
-      "perception": { "sight": 80, "fov": 300, "hearing": 30 }, "temperament": "curieux",
-      "social": { "min": 1, "max": 3, "radius": 30 }, "activity": "day", "hp": 10, "damage": 0,
-      "colors": { "body": "#cfd6e0", "accent": "#e4874b" },
-      "description": "Oiseau planeur qui tournoie au-dessus des zones humides."
-    },
-    {
-      "id": "tyrannoraptor", "name": "Tyrannoraptor territorial", "diet": "carnivore", "archetype": "biped",
-      "size": { "length": 5.5, "height": 4.2 }, "speed": { "walk": 2.5, "run": 9.0 },
-      "perception": { "sight": 55, "fov": 160, "hearing": 50 }, "temperament": "agressif",
-      "social": { "min": 1, "max": 1, "radius": 0 }, "activity": "both", "hp": 260, "damage": 22,
-      "territory": 70, "prey": ["lumifer", "velox", "nocturne", "sablier", "frigo_stag", "hydrolepis", "brachyceros"],
-      "colors": { "body": "#4b4c34", "accent": "#c9a23a" },
-      "description": "Prédateur de grande taille. Défend son territoire et attaque tout ce qui s'en approche."
-    }
-  ]
+ "_comment": "Species data sheets. archetype selects the procedural body (quadruped, biped, sauropod, flyer, aquatic). Speeds in m/s, sizes in m.",
+ "species": [
+  {
+   "id": "lumifer",
+   "name": "Lumifer des prairies",
+   "diet": "herbivore",
+   "archetype": "quadruped",
+   "size": {
+    "length": 1.5,
+    "height": 1.0
+   },
+   "speed": {
+    "walk": 1.4,
+    "run": 6.5
+   },
+   "perception": {
+    "sight": 40,
+    "fov": 200,
+    "hearing": 30
+   },
+   "temperament": "timide",
+   "social": {
+    "min": 3,
+    "max": 6,
+    "radius": 18
+   },
+   "activity": "day",
+   "hp": 40,
+   "damage": 0,
+   "colors": {
+    "body": "#9b7b52",
+    "accent": "#eadcb8"
+   },
+   "description": "Herbivore grégaire, très attentif aux bruits. Fuit en groupe au moindre danger."
+  },
+  {
+   "id": "nocturne",
+   "name": "Nocturne bioluminescent",
+   "diet": "herbivore",
+   "archetype": "quadruped",
+   "size": {
+    "length": 0.9,
+    "height": 0.6
+   },
+   "speed": {
+    "walk": 1.0,
+    "run": 5.0
+   },
+   "perception": {
+    "sight": 25,
+    "fov": 220,
+    "hearing": 22
+   },
+   "temperament": "timide",
+   "social": {
+    "min": 1,
+    "max": 2,
+    "radius": 8
+   },
+   "activity": "night",
+   "hp": 15,
+   "damage": 0,
+   "colors": {
+    "body": "#2a2f45",
+    "accent": "#3ff0d0",
+    "emissive": true
+   },
+   "description": "Petit herbivore nocturne. Ses flancs émettent une lumière bleutée pour communiquer."
+  },
+  {
+   "id": "velox",
+   "name": "Velox pourchasseur",
+   "diet": "herbivore",
+   "archetype": "biped",
+   "size": {
+    "length": 1.2,
+    "height": 1.1
+   },
+   "speed": {
+    "walk": 2.2,
+    "run": 10.5
+   },
+   "perception": {
+    "sight": 45,
+    "fov": 260,
+    "hearing": 35
+   },
+   "temperament": "curieux",
+   "social": {
+    "min": 2,
+    "max": 4,
+    "radius": 14
+   },
+   "activity": "day",
+   "hp": 30,
+   "damage": 0,
+   "colors": {
+    "body": "#b1562d",
+    "accent": "#f2c46b"
+   },
+   "description": "Dinosaure rapide à plumage coloré. Curieux, il s'approche puis détale."
+  },
+  {
+   "id": "brachyceros",
+   "name": "Brachycéros géant",
+   "diet": "herbivore",
+   "archetype": "sauropod",
+   "size": {
+    "length": 9.0,
+    "height": 6.0
+   },
+   "speed": {
+    "walk": 1.0,
+    "run": 3.0
+   },
+   "perception": {
+    "sight": 60,
+    "fov": 240,
+    "hearing": 45
+   },
+   "temperament": "passif",
+   "social": {
+    "min": 1,
+    "max": 3,
+    "radius": 25
+   },
+   "activity": "day",
+   "hp": 400,
+   "damage": 0,
+   "colors": {
+    "body": "#5d6e4c",
+    "accent": "#8fa27a"
+   },
+   "description": "Grand herbivore à long cou. Pacifique mais dangereux s'il est acculé."
+  },
+  {
+   "id": "frigo_stag",
+   "name": "Cervidé givré",
+   "diet": "herbivore",
+   "archetype": "quadruped",
+   "size": {
+    "length": 1.8,
+    "height": 1.6
+   },
+   "speed": {
+    "walk": 1.5,
+    "run": 7.0
+   },
+   "perception": {
+    "sight": 50,
+    "fov": 200,
+    "hearing": 35
+   },
+   "temperament": "timide",
+   "social": {
+    "min": 1,
+    "max": 4,
+    "radius": 15
+   },
+   "activity": "day",
+   "hp": 60,
+   "damage": 0,
+   "colors": {
+    "body": "#c8cfd6",
+    "accent": "#5b6a78"
+   },
+   "description": "Herbivore adapté au froid, pelage épais et bois ramifiés."
+  },
+  {
+   "id": "sablier",
+   "name": "Sablier nocturne",
+   "diet": "herbivore",
+   "archetype": "quadruped",
+   "size": {
+    "length": 1.3,
+    "height": 0.9
+   },
+   "speed": {
+    "walk": 1.2,
+    "run": 6.0
+   },
+   "perception": {
+    "sight": 30,
+    "fov": 180,
+    "hearing": 40
+   },
+   "temperament": "timide",
+   "social": {
+    "min": 1,
+    "max": 2,
+    "radius": 10
+   },
+   "activity": "night",
+   "hp": 35,
+   "damage": 0,
+   "colors": {
+    "body": "#d8b27a",
+    "accent": "#a5773d"
+   },
+   "description": "Herbivore du désert. Se cache pendant la journée et s'hydrate la nuit."
+  },
+  {
+   "id": "hydrolepis",
+   "name": "Hydrolépis amphibie",
+   "diet": "herbivore",
+   "archetype": "quadruped",
+   "habitat": "water",
+   "size": {
+    "length": 2.2,
+    "height": 0.9
+   },
+   "speed": {
+    "walk": 1.0,
+    "run": 4.0
+   },
+   "perception": {
+    "sight": 30,
+    "fov": 200,
+    "hearing": 25
+   },
+   "temperament": "timide",
+   "social": {
+    "min": 1,
+    "max": 3,
+    "radius": 12
+   },
+   "activity": "day",
+   "hp": 50,
+   "damage": 0,
+   "colors": {
+    "body": "#3c6e6a",
+    "accent": "#9fd8c4"
+   },
+   "description": "Semi-aquatique : ne quitte jamais les berges et les marais."
+  },
+  {
+   "id": "aerovol",
+   "name": "Aérovol planeur",
+   "diet": "herbivore",
+   "archetype": "flyer",
+   "size": {
+    "length": 1.2,
+    "height": 0.4
+   },
+   "speed": {
+    "walk": 6.0,
+    "run": 13.0
+   },
+   "perception": {
+    "sight": 80,
+    "fov": 300,
+    "hearing": 30
+   },
+   "temperament": "curieux",
+   "social": {
+    "min": 1,
+    "max": 3,
+    "radius": 30
+   },
+   "activity": "day",
+   "hp": 10,
+   "damage": 0,
+   "colors": {
+    "body": "#cfd6e0",
+    "accent": "#e4874b"
+   },
+   "description": "Oiseau planeur qui tournoie au-dessus des zones humides."
+  },
+  {
+   "id": "tyrannoraptor",
+   "name": "Tyrannoraptor territorial",
+   "diet": "carnivore",
+   "archetype": "biped",
+   "size": {
+    "length": 5.5,
+    "height": 4.2
+   },
+   "speed": {
+    "walk": 2.5,
+    "run": 9.0
+   },
+   "perception": {
+    "sight": 55,
+    "fov": 160,
+    "hearing": 50
+   },
+   "temperament": "agressif",
+   "social": {
+    "min": 1,
+    "max": 1,
+    "radius": 0
+   },
+   "activity": "both",
+   "hp": 260,
+   "damage": 22,
+   "territory": 70,
+   "prey": [
+    "lumifer",
+    "velox",
+    "nocturne",
+    "sablier",
+    "frigo_stag",
+    "hydrolepis",
+    "brachyceros"
+   ],
+   "colors": {
+    "body": "#4b4c34",
+    "accent": "#c9a23a"
+   },
+   "description": "Prédateur de grande taille. Défend son territoire et attaque tout ce qui s'en approche."
+  },
+  {
+   "id": "bristleboar",
+   "name": "Sanglier des fougères",
+   "diet": "herbivore",
+   "archetype": "quadruped",
+   "size": {
+    "length": 1.4,
+    "height": 0.9
+   },
+   "speed": {
+    "walk": 1.6,
+    "run": 8.0
+   },
+   "perception": {
+    "sight": 30,
+    "fov": 220,
+    "hearing": 35
+   },
+   "temperament": "defensif",
+   "social": {
+    "min": 2,
+    "max": 4,
+    "radius": 14
+   },
+   "activity": "both",
+   "hp": 70,
+   "damage": 12,
+   "colors": {
+    "body": "#5a4636",
+    "accent": "#2e2218"
+   },
+   "description": "Omnivore trapu. Il charge quiconque l'approche de trop près ou le blesse."
+  },
+  {
+   "id": "hornback",
+   "name": "Cornedos massif",
+   "diet": "herbivore",
+   "archetype": "quadruped",
+   "size": {
+    "length": 5.5,
+    "height": 2.4
+   },
+   "speed": {
+    "walk": 1.3,
+    "run": 6.5
+   },
+   "perception": {
+    "sight": 45,
+    "fov": 200,
+    "hearing": 40
+   },
+   "temperament": "defensif",
+   "social": {
+    "min": 1,
+    "max": 3,
+    "radius": 20
+   },
+   "activity": "day",
+   "hp": 320,
+   "damage": 28,
+   "colors": {
+    "body": "#7a6a4a",
+    "accent": "#d8c9a0"
+   },
+   "description": "Grand herbivore cuirassé à trois cornes. Pacifique, mais il charge les prédateurs et les robots qui le harcèlent."
+  },
+  {
+   "id": "dunewyrm",
+   "name": "Saurien des dunes",
+   "diet": "carnivore",
+   "archetype": "quadruped",
+   "size": {
+    "length": 2.2,
+    "height": 0.7
+   },
+   "speed": {
+    "walk": 2.0,
+    "run": 9.0
+   },
+   "perception": {
+    "sight": 32,
+    "fov": 180,
+    "hearing": 28
+   },
+   "temperament": "agressif",
+   "social": {
+    "min": 1,
+    "max": 1,
+    "radius": 0
+   },
+   "activity": "both",
+   "hp": 55,
+   "damage": 10,
+   "colors": {
+    "body": "#c29a58",
+    "accent": "#7a4c22"
+   },
+   "description": "Reptile chasseur embusqué sous le sable. Il poursuit les petits herbivores.",
+   "prey": [
+    "sablier",
+    "nocturne",
+    "velox"
+   ],
+   "territory": 50,
+   "giveUp": 9
+  },
+  {
+   "id": "riverstalker",
+   "name": "Rôdeur des rivières",
+   "diet": "carnivore",
+   "archetype": "biped",
+   "size": {
+    "length": 6.0,
+    "height": 3.0
+   },
+   "speed": {
+    "walk": 2.2,
+    "run": 8.0
+   },
+   "perception": {
+    "sight": 50,
+    "fov": 150,
+    "hearing": 55
+   },
+   "temperament": "agressif",
+   "social": {
+    "min": 1,
+    "max": 1,
+    "radius": 0
+   },
+   "activity": "both",
+   "hp": 240,
+   "damage": 24,
+   "colors": {
+    "body": "#385244",
+    "accent": "#9bbf86"
+   },
+   "description": "Prédateur semi-aquatique des marais et des berges.",
+   "habitat": "water",
+   "prey": [
+    "hydrolepis",
+    "lumifer",
+    "bristleboar"
+   ],
+   "territory": 80,
+   "giveUp": 16
+  },
+  {
+   "id": "frostraptor",
+   "name": "Raptor des glaces",
+   "diet": "carnivore",
+   "archetype": "biped",
+   "size": {
+    "length": 2.0,
+    "height": 1.4
+   },
+   "speed": {
+    "walk": 2.4,
+    "run": 11.0
+   },
+   "perception": {
+    "sight": 50,
+    "fov": 180,
+    "hearing": 45
+   },
+   "temperament": "agressif",
+   "social": {
+    "min": 2,
+    "max": 4,
+    "radius": 18
+   },
+   "activity": "both",
+   "hp": 75,
+   "damage": 13,
+   "colors": {
+    "body": "#9db2c4",
+    "accent": "#3d5266"
+   },
+   "description": "Prédateur de meute adapté au froid : les individus coordonnent leur chasse.",
+   "prey": [
+    "frigo_stag",
+    "lumifer",
+    "velox",
+    "bristleboar"
+   ],
+   "territory": 90,
+   "pack": true,
+   "giveUp": 18
+  },
+  {
+   "id": "glidewing",
+   "name": "Ptérovol géant",
+   "diet": "herbivore",
+   "archetype": "flyer",
+   "size": {
+    "length": 3.2,
+    "height": 0.8
+   },
+   "speed": {
+    "walk": 7.0,
+    "run": 15.0
+   },
+   "perception": {
+    "sight": 90,
+    "fov": 300,
+    "hearing": 35
+   },
+   "temperament": "curieux",
+   "social": {
+    "min": 1,
+    "max": 2,
+    "radius": 40
+   },
+   "activity": "day",
+   "hp": 35,
+   "damage": 0,
+   "colors": {
+    "body": "#8a7b6a",
+    "accent": "#d9b26f"
+   },
+   "description": "Grand planeur qui chasse les courants chauds au-dessus des plateaux."
+  },
+  {
+   "id": "ashflyer",
+   "name": "Corbeau des cendres",
+   "diet": "herbivore",
+   "archetype": "flyer",
+   "size": {
+    "length": 1.0,
+    "height": 0.35
+   },
+   "speed": {
+    "walk": 6.0,
+    "run": 14.0
+   },
+   "perception": {
+    "sight": 70,
+    "fov": 300,
+    "hearing": 30
+   },
+   "temperament": "timide",
+   "social": {
+    "min": 2,
+    "max": 5,
+    "radius": 30
+   },
+   "activity": "day",
+   "hp": 8,
+   "damage": 0,
+   "colors": {
+    "body": "#2b2826",
+    "accent": "#b34a22"
+   },
+   "description": "Oiseau noir des zones volcaniques, attiré par la chaleur."
+  },
+  {
+   "id": "glowswarm",
+   "name": "Essaim luminescent",
+   "diet": "herbivore",
+   "archetype": "swarm",
+   "size": {
+    "length": 1.2,
+    "height": 1.0
+   },
+   "speed": {
+    "walk": 1.4,
+    "run": 3.5
+   },
+   "perception": {
+    "sight": 25,
+    "fov": 360,
+    "hearing": 20
+   },
+   "temperament": "curieux",
+   "social": {
+    "min": 1,
+    "max": 2,
+    "radius": 6
+   },
+   "activity": "night",
+   "hp": 6,
+   "damage": 0,
+   "colors": {
+    "body": "#bfffe0",
+    "accent": "#5dffb4",
+    "emissive": true
+   },
+   "description": "Nuée d'insectes bioluminescents qui danse la nuit au-dessus des fougères et des marais."
+  },
+  {
+   "id": "shoal",
+   "name": "Banc d'argentines",
+   "diet": "herbivore",
+   "archetype": "fish",
+   "size": {
+    "length": 0.5,
+    "height": 0.25
+   },
+   "speed": {
+    "walk": 2.0,
+    "run": 7.0
+   },
+   "perception": {
+    "sight": 25,
+    "fov": 300,
+    "hearing": 25
+   },
+   "temperament": "timide",
+   "social": {
+    "min": 8,
+    "max": 14,
+    "radius": 5
+   },
+   "activity": "day",
+   "hp": 4,
+   "damage": 0,
+   "colors": {
+    "body": "#b9c7d1",
+    "accent": "#e8f2f7"
+   },
+   "description": "Banc de poissons qui se resserre et fuit les prédateurs.",
+   "habitat": "sea"
+  },
+  {
+   "id": "reefshark",
+   "name": "Requin de récif",
+   "diet": "carnivore",
+   "archetype": "fish",
+   "size": {
+    "length": 3.4,
+    "height": 1.1
+   },
+   "speed": {
+    "walk": 2.6,
+    "run": 9.0
+   },
+   "perception": {
+    "sight": 45,
+    "fov": 200,
+    "hearing": 60
+   },
+   "temperament": "agressif",
+   "social": {
+    "min": 1,
+    "max": 1,
+    "radius": 0
+   },
+   "activity": "both",
+   "hp": 160,
+   "damage": 22,
+   "colors": {
+    "body": "#6f7f8a",
+    "accent": "#d7e0e6"
+   },
+   "description": "Prédateur marin qui patrouille les récifs et attaque les plongeurs trop bruyants.",
+   "habitat": "sea",
+   "prey": [
+    "shoal",
+    "hydrolepis"
+   ],
+   "territory": 70,
+   "giveUp": 12
+  },
+  {
+   "id": "manta",
+   "name": "Raie planeuse",
+   "diet": "herbivore",
+   "archetype": "fish",
+   "size": {
+    "length": 4.0,
+    "height": 0.7
+   },
+   "speed": {
+    "walk": 2.0,
+    "run": 5.0
+   },
+   "perception": {
+    "sight": 40,
+    "fov": 260,
+    "hearing": 30
+   },
+   "temperament": "passif",
+   "social": {
+    "min": 1,
+    "max": 2,
+    "radius": 20
+   },
+   "activity": "day",
+   "hp": 120,
+   "damage": 0,
+   "colors": {
+    "body": "#2a3b52",
+    "accent": "#cfe0ef"
+   },
+   "description": "Grande raie qui glisse lentement au-dessus des fonds marins.",
+   "habitat": "sea"
+  },
+  {
+   "id": "angler",
+   "name": "Baudroie abyssale",
+   "diet": "carnivore",
+   "archetype": "fish",
+   "size": {
+    "length": 2.0,
+    "height": 1.2
+   },
+   "speed": {
+    "walk": 1.2,
+    "run": 6.0
+   },
+   "perception": {
+    "sight": 25,
+    "fov": 200,
+    "hearing": 45
+   },
+   "temperament": "agressif",
+   "social": {
+    "min": 1,
+    "max": 1,
+    "radius": 0
+   },
+   "activity": "both",
+   "hp": 90,
+   "damage": 18,
+   "colors": {
+    "body": "#1a1d26",
+    "accent": "#6bf0ff",
+    "emissive": true
+   },
+   "description": "Prédateur des abysses qui attire ses proies avec un leurre lumineux.",
+   "habitat": "sea",
+   "prey": [
+    "shoal"
+   ],
+   "territory": 40,
+   "giveUp": 8
+  },
+  {
+   "id": "glimmerwisp",
+   "name": "Lueur flottante",
+   "diet": "herbivore",
+   "archetype": "floater",
+   "size": {
+    "length": 1.8,
+    "height": 1.8
+   },
+   "speed": {
+    "walk": 1.0,
+    "run": 3.0
+   },
+   "perception": {
+    "sight": 30,
+    "fov": 360,
+    "hearing": 25
+   },
+   "temperament": "curieux",
+   "social": {
+    "min": 2,
+    "max": 4,
+    "radius": 12
+   },
+   "activity": "both",
+   "hp": 30,
+   "damage": 0,
+   "colors": {
+    "body": "#7a5bd6",
+    "accent": "#e0b3ff",
+    "emissive": true
+   },
+   "description": "Organisme extraterrestre flottant dont l'ombrelle pulse de lumière. Il dérive vers les sources de chaleur et de bruit."
+  },
+  {
+   "id": "crystalback",
+   "name": "Dos-cristal",
+   "diet": "herbivore",
+   "archetype": "crawler",
+   "size": {
+    "length": 2.6,
+    "height": 1.2
+   },
+   "speed": {
+    "walk": 1.3,
+    "run": 6.0
+   },
+   "perception": {
+    "sight": 30,
+    "fov": 240,
+    "hearing": 30
+   },
+   "temperament": "defensif",
+   "social": {
+    "min": 1,
+    "max": 2,
+    "radius": 12
+   },
+   "activity": "both",
+   "hp": 110,
+   "damage": 20,
+   "colors": {
+    "body": "#3a2f4d",
+    "accent": "#6ef0ff",
+    "emissive": true
+   },
+   "description": "Rampant à six pattes dont l'échine est hérissée de cristaux. Il se nourrit des minéraux et frappe en pivotant."
+  },
+  {
+   "id": "ashstrider",
+   "name": "Marcheur de cendres",
+   "diet": "carnivore",
+   "archetype": "stilt",
+   "size": {
+    "length": 4.5,
+    "height": 5.0
+   },
+   "speed": {
+    "walk": 2.0,
+    "run": 9.0
+   },
+   "perception": {
+    "sight": 70,
+    "fov": 170,
+    "hearing": 40
+   },
+   "temperament": "agressif",
+   "social": {
+    "min": 1,
+    "max": 1,
+    "radius": 0
+   },
+   "activity": "both",
+   "hp": 150,
+   "damage": 20,
+   "colors": {
+    "body": "#322b36",
+    "accent": "#e0572a",
+    "emissive": true
+   },
+   "description": "Prédateur extraterrestre sur longues échasses. Il traque les proies de loin et abandonne quand elles s'éloignent.",
+   "prey": [
+    "crystalback",
+    "ashflyer",
+    "sablier",
+    "bristleboar"
+   ],
+   "territory": 100,
+   "giveUp": 10
+  }
+ ]
 }

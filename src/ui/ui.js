@@ -103,6 +103,10 @@ export class UI {
     $('bar-integrity').classList.toggle('low', s.integrity < 30);
     $('temp').textContent = `${s.temperature.toFixed(0)} °C`;
     $('weather').textContent = s.weatherLabel;
+    $('tool').textContent = Math.round(s.tool);
+    $('tool').style.color = s.tool < 30 ? '#ff5d5d' : '';
+    $('depth').textContent = s.depth ? `Prof. ${s.depth.value.toFixed(0)} m / ${s.depth.limit.toFixed(0)} m` : '';
+    $('depth').style.color = s.depth && s.depth.value > s.depth.limit ? '#ff5d5d' : '';
     $('biome').textContent = s.biomeName;
     $('clock').textContent = s.clock;
     $('objective').textContent = s.objective;
@@ -111,12 +115,17 @@ export class UI {
     this.setPrompt(s.prompt);
     this.drawCompass(s);
 
-    const roverHud = $('rover-hud');
-    roverHud.classList.toggle('hidden', !s.rover);
-    if (s.rover) {
-      $('rover-speed').textContent = `${s.rover.kmh.toFixed(0)} km/h`;
-      $('rover-energy').textContent = `Énergie ${Math.round(s.rover.energy)} %`;
-      $('rover-hull').textContent = `Coque ${Math.round(s.rover.hull)} %`;
+    const vehicleHud = $('vehicle-hud');
+    vehicleHud.classList.toggle('hidden', !s.vehicle);
+    if (s.vehicle) {
+      const v = s.vehicle;
+      $('vehicle-name').textContent = v.name;
+      $('vehicle-speed').textContent = `${v.kmh.toFixed(0)} km/h`;
+      $('vehicle-extra').textContent = v.altitude !== null ? `Altitude ${v.altitude.toFixed(0)} m` : v.depth !== null ? `Profondeur ${v.depth.toFixed(0)} m` : '';
+      $('vehicle-energy').textContent = `Énergie ${Math.round(v.energy)} %`;
+      $('vehicle-hull').textContent = `Coque ${Math.round(v.hull)} %`;
+      $('vehicle-energy').style.color = v.energy < 20 ? '#ff5d5d' : '';
+      $('vehicle-hull').style.color = v.hull < 30 ? '#ff5d5d' : '';
     }
 
     this.damageAlpha = Math.max(0, this.damageAlpha - dt * 1.2);
@@ -308,7 +317,7 @@ export class UI {
     for (const c of d.creatures) dot(c.x, c.z, c.predator ? '#ff5d5d' : '#7dff9f', 'circle', 3);
     for (const e of d.enemies) dot(e.x, e.z, '#ff3b3b', 'tri', 5);
     if (d.objectiveTarget) dot(d.objectiveTarget.x, d.objectiveTarget.z, '#7fe9ff', 'diamond', 8);
-    if (d.rover) dot(d.rover.x, d.rover.z, '#e0873a', 'circle', 6);
+    for (const v of d.vehicles) dot(v.x, v.z, '#e0873a', 'circle', 6);
     dot(d.player.x, d.player.z, '#7fe9ff', 'circle', 6);
     ctx.fillStyle = '#e8f7ff';
     ctx.font = '13px system-ui, sans-serif';

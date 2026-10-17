@@ -137,20 +137,149 @@ function buildFlyer(species, a) {
   return { root, body, head, tail, legs: [], wings, neck: null };
 }
 
-const BUILDERS = { quadruped: buildQuadruped, biped: buildBiped, sauropod: buildSauropod, flyer: buildFlyer, aquatic: buildQuadruped };
+function buildFish(species, a) {
+  const { length: L, height: H } = species.size;
+  const root = new THREE.Group();
+  const body = pivot(root, [0, 0, 0]);
+  const flat = species.id === 'manta';
+  body.add(mesh(ellipsoid(H * 0.5, flat ? 3.2 : 0.8, flat ? 0.4 : 1, (L / H) * (flat ? 0.6 : 1)), a.body, [0, 0, 0]));
+  const head = pivot(body, [0, 0, L * 0.4]);
+  head.add(mesh(new THREE.SphereGeometry(H * 0.06, 6, 5), a.eye, [H * 0.22, H * 0.1, 0]));
+  head.add(mesh(new THREE.SphereGeometry(H * 0.06, 6, 5), a.eye, [-H * 0.22, H * 0.1, 0]));
+  const tail = pivot(body, [0, 0, -L * 0.45]);
+  tail.add(mesh(new THREE.ConeGeometry(H * (flat ? 0.15 : 0.45), L * (flat ? 0.9 : 0.3), 4), a.accent, [0, 0, -L * (flat ? 0.4 : 0.12)], [-Math.PI / 2, 0, 0]));
+  if (!flat) body.add(mesh(new THREE.ConeGeometry(H * 0.25, H * 0.7, 3), a.accent, [0, H * 0.55, -L * 0.05]));
+  if (species.id === 'angler') {
+    const lure = pivot(body, [0, H * 0.6, L * 0.35]);
+    lure.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, H * 0.9, 4), a.dark, [0, H * 0.4, H * 0.3], [0.8, 0, 0]));
+    lure.add(mesh(new THREE.SphereGeometry(H * 0.12, 8, 6), a.accent, [0, H * 0.75, H * 0.7]));
+    body.add(mesh(new THREE.ConeGeometry(H * 0.5, H * 0.4, 6), a.dark, [0, -H * 0.1, L * 0.45], [Math.PI / 2, 0, 0]));
+  }
+  return { root, body, head, tail, legs: [], wings: [], neck: null, swim: true, flat };
+}
+
+function buildSwarm(species, a) {
+  const root = new THREE.Group();
+  const body = pivot(root, [0, 0, 0]);
+  const geo = new THREE.SphereGeometry(0.05, 5, 4);
+  const inst = new THREE.InstancedMesh(geo, a.accent, 18);
+  body.add(inst);
+  const phases = Array.from({ length: 18 }, (_, i) => ({ f: 0.8 + (i % 5) * 0.35, p: i * 1.7, r: 0.35 + (i % 4) * 0.22 }));
+  const dummy = new THREE.Object3D();
+  return {
+    root, body, head: pivot(root, [0, 0, 0]), tail: pivot(root, [0, 0, 0]), legs: [], wings: [], neck: null,
+    tick(time) {
+      phases.forEach((q, i) => {
+        dummy.position.set(Math.sin(time * q.f + q.p) * q.r, 0.2 + Math.sin(time * q.f * 1.3 + q.p) * 0.35, Math.cos(time * q.f * 0.9 + q.p) * q.r);
+        dummy.scale.setScalar(0.8 + 0.5 * Math.sin(time * 4 + q.p));
+        dummy.updateMatrix();
+        inst.setMatrixAt(i, dummy.matrix);
+      });
+      inst.instanceMatrix.needsUpdate = true;
+    },
+    dispose() { inst.dispose(); }
+  };
+}
+
+function buildFloater(species, a) {
+  const { height: H } = species.size;
+  const root = new THREE.Group();
+  const body = pivot(root, [0, H * 0.7, 0]);
+  const dome = mesh(new THREE.SphereGeometry(H * 0.45, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), a.accent, [0, 0, 0]);
+  dome.material = dome.material.clone();
+  dome.material.transparent = true;
+  dome.material.opacity = 0.75;
+  body.add(dome);
+  body.add(mesh(new THREE.SphereGeometry(H * 0.14, 8, 6), a.body, [0, H * 0.05, 0]));
+  const tentacles = [];
+  for (let i = 0; i < 6; i++) {
+    const t = pivot(body, [Math.cos(i * 1.05) * H * 0.3, 0, Math.sin(i * 1.05) * H * 0.3]);
+    t.add(mesh(new THREE.CylinderGeometry(0.015, 0.03, H * 1.1, 4), a.accent, [0, -H * 0.55, 0]));
+    tentacles.push(t);
+  }
+  const light = new THREE.PointLight(species.colors.accent, 0.8, 7, 2);
+  body.add(light);
+  return {
+    root, body, head: pivot(root, [0, 0, 0]), tail: pivot(root, [0, 0, 0]), legs: [], wings: [], neck: null,
+    tick(time) {
+      dome.scale.y = 1 + Math.sin(time * 2.2) * 0.18;
+      tentacles.forEach((t, i) => { t.rotation.x = Math.sin(time * 1.5 + i) * 0.35; t.rotation.z = Math.cos(time * 1.2 + i) * 0.35; });
+      light.intensity = 0.7 + Math.sin(time * 2.2) * 0.3;
+    },
+    dispose() { light.dispose?.(); }
+  };
+}
+
+function buildCrawler(species, a) {
+  const { length: L, height: H } = species.size;
+  const root = new THREE.Group();
+  const body = pivot(root, [0, H * 0.5, 0]);
+  body.add(mesh(ellipsoid(H * 0.4, 1, 0.7, (L / H) * 0.9), a.body, [0, 0, 0]));
+  for (let i = 0; i < 6; i++) {
+    body.add(mesh(new THREE.ConeGeometry(H * 0.09, H * 0.7, 5), a.accent, [((i % 2) - 0.5) * H * 0.5, H * 0.35, (i / 5 - 0.5) * L * 0.6], [0.2 * ((i % 2) - 0.5), 0, 0.3 * ((i % 2) - 0.5)]));
+  }
+  const head = pivot(body, [0, 0, L * 0.45]);
+  head.add(mesh(ellipsoid(H * 0.22, 1, 0.8, 1.1), a.body, [0, 0, 0]));
+  head.add(mesh(new THREE.SphereGeometry(H * 0.05, 6, 5), a.accent, [H * 0.1, H * 0.08, H * 0.2]));
+  head.add(mesh(new THREE.SphereGeometry(H * 0.05, 6, 5), a.accent, [-H * 0.1, H * 0.08, H * 0.2]));
+  const tail = pivot(body, [0, 0, -L * 0.45]);
+  tail.add(mesh(new THREE.ConeGeometry(H * 0.12, L * 0.3, 5), a.body, [0, 0, -L * 0.12], [-Math.PI / 2, 0, 0]));
+  const legs = [];
+  for (const z of [-0.3, 0, 0.3]) {
+    for (const x of [-1, 1]) {
+      const leg = pivot(root, [x * H * 0.35, H * 0.45, z * L]);
+      leg.rotation.z = x * 0.6;
+      leg.add(mesh(new THREE.CylinderGeometry(H * 0.05, H * 0.035, H * 0.7, 5), a.dark, [x * H * 0.15, -H * 0.3, 0], [0, 0, x * 0.4]));
+      legs.push(leg);
+    }
+  }
+  return { root, body, head, tail, legs, wings: [], neck: null };
+}
+
+function buildStilt(species, a) {
+  const { length: L, height: H } = species.size;
+  const root = new THREE.Group();
+  const body = pivot(root, [0, H * 0.78, 0]);
+  body.add(mesh(ellipsoid(H * 0.15, 1, 0.9, 1.9 * L / H), a.body, [0, 0, 0]));
+  for (let i = 0; i < 4; i++) body.add(mesh(new THREE.SphereGeometry(H * 0.03, 6, 5), a.accent, [0, H * 0.13, -L * 0.15 + i * L * 0.12]));
+  const neck = pivot(body, [0, H * 0.05, L * 0.3]);
+  neck.rotation.x = -0.7;
+  neck.add(mesh(new THREE.CylinderGeometry(H * 0.03, H * 0.045, H * 0.35, 6), a.body, [0, H * 0.17, 0]));
+  const head = pivot(neck, [0, H * 0.36, 0]);
+  head.rotation.x = 0.7;
+  head.add(mesh(ellipsoid(H * 0.05, 1, 0.9, 1.7), a.body, [0, 0, H * 0.04]));
+  head.add(mesh(new THREE.SphereGeometry(H * 0.022, 6, 5), a.accent, [H * 0.035, H * 0.02, H * 0.08]));
+  head.add(mesh(new THREE.SphereGeometry(H * 0.022, 6, 5), a.accent, [-H * 0.035, H * 0.02, H * 0.08]));
+  const tail = pivot(body, [0, 0, -L * 0.3]);
+  tail.add(mesh(new THREE.ConeGeometry(H * 0.03, L * 0.5, 5), a.body, [0, 0, -L * 0.22], [-Math.PI / 2, 0, 0]));
+  const legs = [];
+  for (const [x, z] of [[-0.18, 0.12], [0.18, 0.12], [-0.18, -0.12], [0.18, -0.12]]) {
+    const leg = pivot(root, [x * H, H * 0.78, z * L]);
+    leg.add(mesh(new THREE.CylinderGeometry(H * 0.014, H * 0.022, H * 0.8, 5), a.dark, [0, -H * 0.4, 0]));
+    legs.push(leg);
+  }
+  return { root, body, head, tail, legs, wings: [], neck, gait: 0.35 };
+}
+
+const BUILDERS = {
+  quadruped: buildQuadruped, biped: buildBiped, sauropod: buildSauropod, flyer: buildFlyer, aquatic: buildQuadruped,
+  fish: buildFish, swarm: buildSwarm, floater: buildFloater, crawler: buildCrawler, stilt: buildStilt
+};
 
 /** Creates a posed creature view. Call update(dt, creature) every frame. */
-export function createCreatureView(species) {
+export function createCreatureView(species, traits = { size: 1 }) {
   const assets = speciesAssets(species);
   const build = BUILDERS[species.archetype] ?? buildQuadruped;
   const parts = build(species, assets);
   const isFlyer = species.archetype === 'flyer';
+  parts.root.scale.setScalar(traits.size ?? 1);
   let phase = Math.random() * Math.PI * 2;
   let time = Math.random() * 10;
   const baseBodyY = parts.body.position.y;
 
   return {
     root: parts.root,
+    dispose: parts.dispose,
     update(dt, c) {
       time += dt;
       const stride = Math.min(1.4, c.speed / Math.max(1, species.speed.walk));
@@ -164,12 +293,19 @@ export function createCreatureView(species) {
       parts.body.position.y = baseBodyY + lift + Math.sin(time * 1.8) * 0.01 * (sleeping ? 0 : 1);
       parts.root.rotation.z = dead ? Math.min(1.5, c.deadTimer * 2) : 0;
 
+      const gait = parts.gait ?? 0.5;
       parts.legs.forEach((leg, i) => {
         const offset = i % 2 === 0 ? 0 : Math.PI;
         const crossOffset = i < 2 ? 0 : Math.PI;
-        const swing = (Math.sin(phase + offset + crossOffset * 0.5) * 0.5 * stride) + (sleeping ? 1.2 : 0);
+        const swing = (Math.sin(phase + offset + crossOffset * 0.5) * gait * stride) + (sleeping ? 1.2 : 0);
         leg.rotation.x = dead ? 0 : swing;
       });
+      if (parts.tick) parts.tick(time);
+      if (parts.swim) {
+        parts.tail.rotation.y = Math.sin(time * (3 + c.speed * 1.5)) * 0.5;
+        parts.body.rotation.z = Math.sin(time * 1.3) * 0.05;
+        if (dead) parts.root.rotation.z = Math.PI;
+      }
       if (parts.arms) parts.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(phase + i * Math.PI) * 0.4 * stride; });
 
       const grazing = c.state === 'graze' || c.state === 'drink';

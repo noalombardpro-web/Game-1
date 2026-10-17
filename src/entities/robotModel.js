@@ -58,6 +58,7 @@ export function createRobotModel() {
   antenna.castShadow = false;
 
   const arms = {};
+  let toolTip = null;
   for (const side of [-1, 1]) {
     const key = side < 0 ? 'L' : 'R';
     const shoulder = pivot(torso, [side * 0.29, 0.5, 0]);
@@ -66,6 +67,12 @@ export function createRobotModel() {
     const elbow = pivot(shoulder, [0, -0.3, 0]);
     part(new THREE.CylinderGeometry(0.045, 0.04, 0.28, 8), materials.worn, { pos: [0, -0.14, 0], parent: elbow });
     part(new THREE.BoxGeometry(0.1, 0.12, 0.09), materials.composite, { pos: [0, -0.33, 0], parent: elbow });
+    if (side > 0) {
+      toolTip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: '#7fe9ff' }));
+      toolTip.position.set(0, -0.42, 0.06);
+      toolTip.visible = false;
+      elbow.add(toolTip);
+    }
     arms[key] = { shoulder, elbow };
   }
 
@@ -89,7 +96,7 @@ export function createRobotModel() {
   head.add(lamp.target);
 
   return {
-    root, hips, torso, head, neck, arms, legs, lamp, glow: [sensorL, sensorR, antenna, core],
+    root, hips, torso, head, neck, arms, legs, lamp, toolTip, glow: [sensorL, sensorR, antenna, core],
     phase: 0, time: 0, materials,
     /**
      * Animates the body. `s` = { speed (m/s), grounded, crouch (0..1), sprint (bool), dt, airVel }.
@@ -102,9 +109,10 @@ export function createRobotModel() {
       const swing = Math.sin(this.phase) * 0.55 * stride;
       const flex = (p) => Math.max(0, -Math.cos(p)) * 0.65 * stride;
 
-      const crouch = s.crouch;
-      hips.position.y = HIP_HEIGHT - crouch * 0.38 + (s.grounded ? 0 : Math.max(-0.1, s.airVel * 0.01));
-      torso.rotation.x = Math.min(0.25, s.speed * 0.018) * (s.sprint ? 1 : 0.6) + crouch * 0.3;
+      const crouch = Math.min(1, s.crouch + (s.land ?? 0));
+      const swim = s.swim ?? 0;
+      hips.position.y = HIP_HEIGHT - crouch * 0.38 + (s.grounded ? 0 : Math.max(-0.1, s.airVel * 0.01)) - swim * 0.2;
+      torso.rotation.x = Math.min(0.25, s.speed * 0.018) * (s.sprint ? 1 : 0.6) + crouch * 0.3 + swim * 1.2;
       torso.position.y = 0.12 + Math.sin(this.time * 2.1) * 0.006;
       neck.rotation.x = -torso.rotation.x * 0.5;
 
@@ -116,6 +124,10 @@ export function createRobotModel() {
         hip.rotation.x = Math.sin(p) * 0.55 * stride - crouch * 1.0 - air * 0.5;
         knee.rotation.x = flex(p) + crouch * 1.3 + air * 0.6;
         legs[key].ankle.rotation.x = -hip.rotation.x * 0.3 - crouch * 0.4;
+        if (swim) {
+          hip.rotation.x = Math.sin(this.phase * 1.6 + (key === 'L' ? 0 : Math.PI)) * 0.45;
+          knee.rotation.x = 0.2;
+        }
       }
       for (const key of ['L', 'R']) {
         const sign = key === 'L' ? 1 : -1;
@@ -123,6 +135,14 @@ export function createRobotModel() {
         arms[key].shoulder.rotation.z = key === 'L' ? -0.08 : 0.08;
         arms[key].elbow.rotation.x = -0.45 - Math.max(0, swing * sign) * 0.4;
       }
+      const act = s.action ?? 0;
+      if (act > 0) {
+        arms.R.shoulder.rotation.x = -1.35 * act + arms.R.shoulder.rotation.x * (1 - act);
+        arms.R.elbow.rotation.x = -0.2 * act + arms.R.elbow.rotation.x * (1 - act);
+      }
+      toolTip.visible = act > 0.05;
+      toolTip.material.color.set({ scan: '#7fe9ff', collect: '#ffd166', repair: '#ff8a3d' }[s.actionKind] ?? '#7fe9ff');
+      toolTip.scale.setScalar(1 + act * 0.8);
       sensorL.material.emissiveIntensity = sensorR.material.emissiveIntensity = 2.2 + Math.sin(this.time * 3) * 0.3;
       return this.phase;
     },

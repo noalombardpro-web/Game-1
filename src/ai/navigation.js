@@ -9,19 +9,20 @@ const OFFSETS = [0, 0.45, -0.45, 0.9, -0.9, 1.4, -1.4, 2.2, -2.2];
  * @param x, z     current position
  * @param y        current ground height
  * @param desired  desired heading in radians (0 = +Z)
- * @param opts     { aquatic, maxSlope, lookAhead }
+ * @param opts     { aquatic, minDepth (water depth required when aquatic), maxSlope, lookAhead }
  * @returns heading to follow, or null when every candidate is blocked
  */
 export function chooseHeading(world, x, z, y, desired, opts = {}) {
   const aquatic = !!opts.aquatic;
   const maxSlope = opts.maxSlope ?? 0.7;
   const look = opts.lookAhead ?? 3;
+  const minDepth = opts.minDepth ?? 0.2;
   for (const off of OFFSETS) {
     const yaw = desired + off;
     const px = x + Math.sin(yaw) * look;
     const pz = z + Math.cos(yaw) * look;
     const h = world.heightAt(px, pz);
-    if (aquatic ? h > WATER_LEVEL - 0.2 : h < WATER_LEVEL - 0.4) continue;
+    if (aquatic ? h > WATER_LEVEL - minDepth : h < WATER_LEVEL - 0.4) continue;
     if (Math.abs(h - y) / look > maxSlope) continue;
     if (blockedByCollider(world, px, pz)) continue;
     return yaw;
