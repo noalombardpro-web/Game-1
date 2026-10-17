@@ -138,6 +138,10 @@ export class Game {
         }
         return null;
       },
+      spawnVehicle: (type, dx = 6, dz = 0) => this.vehicles?.add(type, this.player.pos.x + dx, this.player.pos.z + dz, 0)?.id,
+      build: (type, x, z) => { const r = this.bases.place(this.inventory, type, x, z, 0); return r.ok ? r.structure.id : r.reason; },
+      launch: () => { const v = this.vehicles.list.find((x) => x.typeId === 'ship'); if (v) this.launchToSpace(v); return !!v; },
+      land: (planet) => this.space && this.landOn(planet),
       forceWeather: (kind) => { if (this.weather) { this.weather.kind = kind; this.weather.timer = 600; } },
       nearestNode: () => {
         const p = this.player.pos;
@@ -164,6 +168,8 @@ export class Game {
       weatherCurrent: { rain: this.weather.current.rain, snow: this.weather.current.snow, sand: this.weather.current.sand, fog: this.weather.current.fog },
       timeOfDay: this.environment.timeOfDay,
       missions: this.missions.toJSON(),
+      planet: this.planetId,
+      space: this.space ? { energy: this.space.ship.energy, hull: this.space.ship.hull, throttle: this.space.ship.throttle, nearest: this.space.nearestBody().body?.id ?? null } : null,
       mounted: this.mounted ? { id: this.mounted.id, type: this.mounted.typeId } : null,
       structures: this.bases.list.map((s) => ({ id: s.id, type: s.typeId, x: s.x, z: s.z, level: s.level, powered: s.powered, stored: s.stored })),
       vehicles: this.vehicles.list.map((v) => ({ id: v.id, type: v.typeId, x: v.x, y: v.y, z: v.z, speed: v.speed, energy: v.energy, hull: v.hull, seated: v.seated })),

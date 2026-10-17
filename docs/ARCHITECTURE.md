@@ -74,3 +74,11 @@ comportement dynamique (IA, météo) utilise `Math.random` ou un RNG de session 
   il faudra le recentrage.
 - La hauteur analytique (`terrain.height`) et le maillage LOD 0 concordent aux sommets, mais entre deux
   sommets l'écart est de quelques centimètres.
+
+## Ajouts (expansion)
+
+- `src/vehicles/` : `Vehicle` (ground/air/sub) et `VehicleManager`, configurés par `data/vehicles.json`.
+- `src/bases/` : `BaseManager` (placement, réseau d'énergie par portée, stations, services).
+- `src/space/` : `SpaceSession` (scène spatiale séparée, modèle de vol, corps célestes, collisions, minage).
+- `Game.buildGlobals / buildWorld(planetId)` : état partagé vs monde propre à une planète ; les états des
+  planètes quittées sont gardés dans `planetStates` et sauvegardés.

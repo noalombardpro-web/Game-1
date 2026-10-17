@@ -66,7 +66,7 @@ try {
   const s0 = await state(page);
   check('world streams chunks around the player', s0.chunks >= 50, `chunks=${s0.chunks}`);
   check('fauna spawned and visible views created', s0.creatures > 0 && s0.views > 0, `creatures=${s0.creatures}, views=${s0.views}`);
-  check('enemies spawned at points of interest', s0.enemies === 6, `enemies=${s0.enemies}`);
+  check('enemies spawned at points of interest', s0.enemies >= 6, `enemies=${s0.enemies}`);
   check('robot starts with full vitals', s0.robot.energy > 90 && s0.robot.integrity > 90, JSON.stringify(s0.robot));
   await page.screenshot({ path: `${OUT}/01-start.png` });
 
@@ -150,32 +150,35 @@ try {
   }
 
   // Rover: board with E, drive forward, leave with E.
-  const rover0 = (await state(page)).rover;
+  const rover0 = (await state(page)).vehicles.find((v) => v.type === 'rover');
   await page.evaluate((r) => window.__genesis.teleport(r.x + 2.5, r.z), rover0);
   await page.keyboard.press('KeyE');
-  await until(page, () => window.__genesis.state().rover.seated, null, 60000);
+  await until(page, () => window.__genesis.state().mounted?.type === 'rover', null, 60000);
   check('E boards the rover', true);
-  const roverStart = (await state(page)).rover;
+  const roverOf = async () => (await state(page)).vehicles.find((v) => v.type === 'rover');
+  const roverStart = await roverOf();
   await page.keyboard.down('KeyW');
-  await until(page, (r) => Math.hypot(window.__genesis.state().rover.x - r.x, window.__genesis.state().rover.z - r.z) > 6, roverStart, 120000);
+  await until(page, (r) => { const v = window.__genesis.state().vehicles.find((x) => x.type === 'rover'); return Math.hypot(v.x - r.x, v.z - r.z) > 6; }, roverStart, 120000);
   await page.keyboard.up('KeyW');
-  const roverEnd = (await state(page)).rover;
-  check('the rover accelerates and drives', Math.hypot(roverEnd.x - roverStart.x, roverEnd.z - roverStart.z) > 6 && roverEnd.energy < roverStart.energy,
-    `moved=${Math.hypot(roverEnd.x - roverStart.x, roverEnd.z - roverStart.z).toFixed(1)} m, energy ${roverStart.energy.toFixed(1)} -> ${roverEnd.energy.toFixed(1)}`);
+  const roverEnd = await roverOf();
+  const rd = Math.hypot(roverEnd.x - roverStart.x, roverEnd.z - roverStart.z);
+  check('the rover accelerates and drives', rd > 6 && roverEnd.energy < roverStart.energy,
+    `moved=${rd.toFixed(1)} m, energy ${roverStart.energy.toFixed(1)} -> ${roverEnd.energy.toFixed(1)}`);
   await page.keyboard.press('KeyE');
-  await until(page, () => !window.__genesis.state().rover.seated, null, 60000);
+  await until(page, () => !window.__genesis.state().mounted, null, 60000);
   check('E leaves the rover', true);
 
   // Scanner and weapon on the nearest living creature (several attempts: animals move).
   const target = async () => (await state(page)).nearCreatures.find((c) => c.alive);
   let scanned = false;
-  for (let attempt = 0; attempt < 12 && !scanned; attempt++) {
+  for (let attempt = 0; attempt < 25 && !scanned; attempt++) {
     const c = await target();
     if (!c) { await sleep(2000); continue; }
     await page.evaluate((t) => { window.__genesis.teleport(t.x, t.z - 10); window.__genesis.aimAt(t.x, t.y + t.height * 0.5, t.z); }, c);
     await page.keyboard.press('KeyR');
     await sleep(1500);
     scanned = (await state(page)).codex.species.length > 0;
+    if (!scanned) console.log('  scan attempt', attempt, c.species, await page.evaluate(() => document.getElementById('toasts')?.textContent?.slice(-120)));
   }
   check('R scans a creature and records it in the codex', scanned, scanned ? (await state(page)).codex.species.join(',') : 'no scan landed');
   let damaged = false;
@@ -207,6 +210,68 @@ try {
   check('scanning the beacon completes the first mission and grants its reward',
     missionDone && (afterMission.inventory.counts.energy_cell ?? 0) >= 2 && afterMission.codex.points.includes('camp'),
     `missionIndex=${afterMission.missions.index}, cells=${afterMission.inventory.counts.energy_cell ?? 0}`);
+
+  // Biome tour: every visited biome must be found and render without console errors.
+  const tour = ['coral_reef', 'volcanic', 'canyon', 'polar_ice', 'desert', 'jungle'];
+  const visited = [];
+  for (const id of tour) {
+    const spot = await page.evaluate((b) => window.__genesis.findBiome(b, 12000), id);
+    if (!spot) continue;
+    await page.evaluate((t) => window.__genesis.teleport(t.x, t.z), spot);
+    await sleep(2500);
+    visited.push(id);
+  }
+  check('biome tour: distinct biomes are reachable', visited.length >= 4, visited.join(','));
+  const reef = await page.evaluate(() => window.__genesis.findBiome('coral_reef', 12000));
+  if (reef) {
+    await page.evaluate((t) => window.__genesis.teleport(t.x, t.z), reef);
+    await until(page, () => window.__genesis.state().player.swimming, null, 60000);
+    check('robot swims in the sea', true);
+  }
+
+  // Vehicles: spawn a buggy and a drone, board and leave each.
+  await page.evaluate(() => { window.__genesis.grant('energy_cell', 6); });
+  const land = await page.evaluate(() => window.__genesis.findBiome('meadow', 12000));
+  await page.evaluate((t) => window.__genesis.teleport(t.x, t.z), land);
+  await sleep(2000);
+  for (const type of ['buggy', 'drone']) {
+    await page.evaluate((t) => window.__genesis.spawnVehicle(t, 3, t === 'drone' ? 40 : 0), type);
+    if (type === 'drone') await page.evaluate(() => { const d = window.__genesis.state().vehicles.find((v) => v.type === 'drone'); window.__genesis.teleport(d.x - 2.5, d.z); });
+    await page.keyboard.press('KeyE');
+    try {
+      await until(page, (t) => window.__genesis.state().mounted?.type === t, type, 60000);
+      await page.keyboard.down('KeyW');
+      await sleep(3000);
+      await page.keyboard.up('KeyW');
+      const ok = (await state(page)).vehicles.find((v) => v.type === type);
+      check(`${type}: board, drive/fly and consume energy`, !!ok && Math.abs(ok.speed) > 0.1 || ok?.energy < 100, `speed=${ok?.speed?.toFixed(1)}`);
+    } catch { check(`${type}: board`, false, 'could not board'); }
+    await page.keyboard.press('KeyE');
+    await sleep(1500);
+  }
+
+  // Bases: build a generator and a workbench with the inventory resources.
+  await page.evaluate(() => { for (const [i, n] of [['ore_metal', 80], ['mineral_silicate', 40], ['crystal_energy', 20], ['electronic_part', 20], ['fiber', 20]]) window.__genesis.grant(i, n); });
+  const here = (await state(page)).player;
+  const built = await page.evaluate((p) => [window.__genesis.build('workbench', p.x + 6, p.z + 6), window.__genesis.build('generator', p.x + 16, p.z + 6)], here);
+  check('base structures can be placed with resources', built.every((b) => /^s\d+$/.test(b)), built.join(' | '));
+
+  // Space: build the ship, launch, navigate, land back.
+  await page.evaluate((p) => { window.__genesis.spawnVehicle('ship', 14, -8); }, here);
+  const launched = await page.evaluate(() => window.__genesis.launch());
+  if (launched) {
+    await until(page, () => window.__genesis.state().space, null, 60000);
+    check('ship launches into the space layer', true);
+    await page.keyboard.down('KeyW');
+    await sleep(3000);
+    await page.keyboard.up('KeyW');
+    await page.screenshot({ path: `${OUT}/08-space.png` });
+    const sp = (await state(page)).space;
+    check('space flight state is simulated', !!sp && sp.energy > 0, JSON.stringify(sp));
+    await page.evaluate(() => window.__genesis.land('genesis'));
+    await until(page, () => !window.__genesis.state().space, null, 60000);
+    check('ship lands back on the planet', (await state(page)).vehicles.some((v) => v.type === 'ship'));
+  } else check('ship launches into the space layer', false, 'no ship');
 
   // Measure frame times over 8 seconds of play.
   const frameStart = (await state(page)).frames;

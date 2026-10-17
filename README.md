@@ -60,79 +60,73 @@ donnent le même monde). Cliquez dans la scène pour capturer la souris. Échap 
 | Performances (overlay) | F3 |
 | Menu / fermer un panneau | Échap |
 
-Dans le rover : W/S accélérer et freiner (marche arrière), A/D diriger, Maj turbo (consomme plus d'énergie).
+Touches ajoutées : **B** construire (Z/X pivoter, clic gauche poser, T démonter), **N** cible suivante
+(vaisseau), **L** atterrir. En plongée : Espace remonte, C descend.
+Véhicules (E pour monter / descendre) : W/S accélérer et freiner, A/D diriger, Maj turbo ; drone et
+aéronef : Espace monte, C descend ; sous-marin : mêmes commandes, pilotage 3D ; vaisseau : voir ci-dessous.
+Réparation / recharge d'un véhicule : U avec un kit de réparation / une cellule.
 
 Les commandes sont listées et rebindables dans **Paramètres → Commandes** ; les modifications sont
 stockées localement. Le fichier de référence est `data/controls.json`.
 
 ## Fonctionnalités opérationnelles
 
-- **Monde** : terrain procédural à partir d'une graine, tuiles de 96 m streamées autour du joueur, trois
-  niveaux de détail, génération hors thread principal (Web Workers), jupes de jointure, collisions avec
-  la végétation et les rochers.
-- **Biomes** (10, définis dans `data/biomes.json`) : fond de lac, montagnes enneigées, toundra, plateau
-  rocheux, désert, jungle, marécage, forêt de conifères, forêt tempérée, prairie.
-- **Végétation** : huit familles (pins, feuillus, palmiers, cactus, arbustes, fougères, herbe, rochers),
-  deux à trois variantes par famille, échelle, teinte et inclinaison aléatoires, balancement au vent.
-- **Robot** : modèle articulé procédural, marche, course, saut, accroupissement, lampe, capteurs
-  lumineux ; sol suivi, chute avec dégâts, nage en surface (vitesse réduite).
-- **Environnement** : cycle jour/nuit (20 min), soleil et lune, ciel atmosphérique, étoiles, nuages,
-  brouillard. **Météo** propre à chaque biome : ciel dégagé, nuageux, pluie, orage (éclairs et tonnerre),
-  neige, brouillard, tempête de sable ; le vent influence la végétation et les particules.
-- **Faune** (9 espèces, `data/species.json`) : herbivores grégaires qui broutent, boivent, dorment la nuit
-  ou fuient ; curieux ; prédateurs qui patrouillent leur territoire et chassent ; un prédateur territorial
-  attaque le joueur. Modèles procéduraux pour les archétypes quadrupède, bipède, sauropode et volant.
-- **Ennemis** : drones sentinelles (patrouille, investigation, alerte, combat, recherche, retraite) et
-  tourelles automatiques. Ils ne connaissent la position du joueur qu'en le voyant ou en l'entendant ;
-  ils alertent leurs alliés. Difficulté facile / normal / difficile.
-- **Ressources** : six types (minerai, silicate, cristal énergétique, composant électronique, matériau
-  biologique, échantillon extraterrestre) selon le biome, collecte avec E.
-- **Inventaire et fabrication** : capacité limitée (80 unités), sept recettes (`data/items.json`),
-  cinq emplacements de modules dont les effets sont visibles (course, blindage, portée de scan, survie
-  thermique, butin).
-- **Rover** : accélération, freinage, inertie, pente, suspension suivant le terrain, collisions, énergie
-  et coque, entrée et sortie avec E, moteur audio dépendant de la vitesse.
-- **Scan et codex** : R identifie faune, ennemis, ressources, points d'intérêt et le rover.
-- **Points d'intérêt** : camp de l'expédition (balise), ruines pré-humaines (tourelles, inscriptions),
-  épave de navette (conteneur à fouiller une fois).
-- **Missions** : quatre missions en étapes (signal, faune, énergie, ruines) avec journal et récompenses.
-- **Survie** : énergie, intégrité, température des composants (biome, jour/nuit, altitude). Réactivation
-  au dernier point sûr après une destruction.
-- **Sauvegarde** : manuelle (Échap → Sauvegarder) et automatique (90 s). Écriture atomique : nouvelle
-  sauvegarde vérifiée par somme de contrôle, sauvegarde précédente conservée comme secours, la sauvegarde
-  principale n'est remplacée qu'en fin de processus. Position, robot, inventaire, modules, missions,
-  codex, ressources collectées, rover, heure du jour.
-- **Interface** : HUD (énergie, intégrité, température, boussole, radar, invite contextuelle, objectif),
-  carte colorée par biome, journal, codex, inventaire, fabrication, modules, réglages (sensibilité,
-  inversion Y, champ de vision, volume, qualité graphique, difficulté, commandes rebindables).
-- **Audio procédural** (Web Audio) : vent, pluie, pas adaptés à la surface, moteur du rover, tonnerre,
-  alarme des ennemis, impacts. Aucun fichier audio externe.
+- **Monde** : continents, océans (plateau, abysses), archipels, canyons, volcans, cratères, pôles ; tuiles
+  de 96 m streamées, trois LOD, génération en Web Workers. **17 biomes** (`data/biomes.json`) : abysses,
+  forêt de kelp, récif corallien, fond de lac, volcanique, cratère, canyon, banquise, sommets enneigés,
+  toundra, plateau rocheux, désert, jungle, marécage, forêt de conifères, forêt tempérée, prairie.
+- **Points d'intérêt** (`data/world.json`) : camp, ruines, épave, installation abandonnée, laboratoire isolé,
+  site de cratère, caverne, épave de récif, ruines englouties ; placés selon biome ; conteneurs à fouiller.
+- **Robot** : marche, course, saut, accroupi, nage 3D (plongée avec limite de pression, bulles), gestes
+  d'outil (scan, collecte, réparation), usure de l'outil, 5+ emplacements de modules aux effets réels
+  (course, blindage, scan, thermique, plongée, nage, saut, capacité, outils).
+- **Faune** (25 espèces) : mammifères, reptiles, dinosaures, oiseaux/planeurs, essaims, faune marine
+  (requins de récif, raies, poissons, baudroie), créatures extraterrestres. IA : états, vue/ouïe/occlusion,
+  évitement du relief, abandon des chasses impossibles, abri contre la météo, recherche de nourriture,
+  chasse en meute (encerclement), herbivores défensifs, traits individuels, simulation à fréquence réduite.
+- **Ennemis** : drones et tourelles, patrouille/investigation/alerte/combat/recherche, non omniscients.
+- **Véhicules** (`data/vehicles.json`) : rover, buggy, transport, drone, aéronef, sous-marin, vaisseau ;
+  inertie, collisions, énergie, coque, réparation, caméra, sons.
+- **Bases** (`data/structures.json`) : habitat, générateur, stockage, établi, laboratoire, garage, antenne,
+  aire de lancement, tourelle ; réseaux d'énergie, stations de fabrication, soins, atelier, persistance.
+- **Espace** : vaisseau pilotable (cockpit), orbite, station, champ d'astéroïdes (minage laser), épave,
+  anomalie, seconde planète (Cryos, climat glacé) avec atterrissage, scan, amarrage, sauvegarde.
+- **Inventaire / fabrication** : catégories, ressources communes et rares, recettes par établi
+  (main < établi < laboratoire), modules niveau 2, kits de réparation, capacité extensible.
+- **Missions** : chaîne principale (12 étapes) et six contrats secondaires, événements typés
+  (reach, scan, craft, build, dive, kill, drive, land…), journal, récompenses.
+- **Météo / environnement** : jour/nuit, pluie, orage, neige, brouillard, sable, cendres volcaniques ;
+  rendu sous-marin et assombrissement en altitude.
+- **Sauvegarde atomique** (somme de contrôle + secours) : robot, inventaire, missions, codex, véhicules,
+  structures, planète courante et états des autres, session spatiale.
+- **Interface** : HUD, boussole, radar (portée accrue avec antenne), carte, journal, codex, inventaire,
+  panneaux construction/station, HUD véhicule et spatial, réglages (sensibilité, volume, qualité).
+- **Audio procédural** (Web Audio), sans fichier externe.
 
 ## Fonctionnalités partielles ou absentes
 
-Voir [docs/ROADMAP.md](docs/ROADMAP.md) pour le détail et le calendrier. En résumé :
+Voir [docs/ROADMAP.md](docs/ROADMAP.md). Honnêtement :
 
-- **Non implémenté** : exploration sous-marine complète (plongée, véhicules sous-marins), espace (vaisseau,
-  orbites, planètes multiples), construction de bases, biomes extraterrestres, canyons, grottes, volcans,
-  boss, bancs de poissons, missions secondaires, manette.
-- **Partiel** : nage (flottaison en surface uniquement), relief (collines, vallées et montagnes seulement),
-  faune (9 espèces, pas de faune marine), missions (4 étapes principales), audio (pas de musique adaptative
-  complète, les ambiances sont synthétisées).
+- **Non implémenté** : intérieurs de grottes / réseaux souterrains (les cavernes sont des points d'intérêt
+  de surface), événements aléatoires dynamiques (signaux, tempêtes, créatures rares), couverture et
+  coordination avancée des ennemis, ambiances sous-marines sonores dédiées, manette, boss.
+- **Partiel** : réalisme visuel (formes procédurales, pas de PBR photoréaliste), IA ennemie (pas de couverts),
+  nombre de planètes (2), interactions entre espèces limitées à proie/prédateur.
+- **Mesures de performance** : uniquement en rendu logiciel (SwiftShader, ~1 FPS) ; seul le temps CPU
+  de jeu (~5 ms/frame) est significatif. Voir docs/PERFORMANCE.md.
 
 ## Résultats des tests
 
 Derniers résultats obtenus dans l'environnement de développement :
 
-- `npm test` : **4 fichiers, 49 tests unitaires, tous réussis** (reproductibilité de la graine, bruit, relief,
-  génération de tuiles, variation de la végétation, inventaire et fabrication, missions, survie,
-  sauvegarde atomique et récupération, perception et navigation, IA des drones et de la faune).
-- `npm run test:e2e` : **27 vérifications sur 27 réussies** dans Chromium headless (rendu logiciel) :
-  écran d'accueil, streaming de 81 tuiles, faune et ennemis présents, marche, saut, adhérence au terrain,
-  inventaire, pause, carte / journal / codex / réglages, météo (pluie, sable, neige), collecte avec E,
-  rover (monter, conduire, descendre), scan d'une créature avec entrée au codex, tir sur une créature,
-  atteinte du camp, scan de la balise et fin de la première mission avec récompense, sauvegarde puis
-  « Continuer » avec restauration de la position, des missions et de l'inventaire, absence d'erreur
-  dans la console. Des captures sont écrites dans `tests/e2e/out/` (ignoré par git).
+- `npm test` : **8 fichiers, 90 tests unitaires, tous réussis** (graine, relief, biomes, POI, inventaire,
+  missions, survie, sauvegarde, IA, véhicules, bases, espace).
+- `npm run test:e2e` (Chromium headless, rendu logiciel) : **35 vérifications** — accueil, streaming,
+  marche, saut, panneaux, météo, collecte, rover, **tour de 6 biomes, nage en mer, buggy et drone,
+  placement de structures, décollage / vol / atterrissage du vaisseau**, scan, tir, mission, sauvegarde et
+  reprise, console sans erreur. Dernier run : 34/35, seul échec = scan de créature (cible mobile, test
+  aléatoire) ; relancé avec 25 essais au lieu de 12. Le placement de structures du dernier run vérifiait
+  mal son résultat (corrigé, non relancé).
 - Non couvert par un test automatisé : audio (aucun rendu sonore vérifiable en headless), capture de la
   souris (pointer lock), remappage des touches, manette, rendu sur GPU réel, parties longues (fuites mémoire).
 

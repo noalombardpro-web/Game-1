@@ -53,3 +53,12 @@ Légende : ✅ livré et testé · 🟡 partiel (existe, simplifié) · ⬜ non 
 - ⬜ Optimisation des draw calls : fusion des instances par tuile et par matériau, grille d'herbe GPU.
 - ⬜ Chargement en flux (IndexedDB) pour les sauvegardes volumineuses.
 - ⬜ Tests visuels de non-régression (captures de référence) et tests de charge de la faune.
+
+## État après l'expansion (prompt 2)
+
+Fait : monde v2, 17 biomes, plongée, 25 espèces, IA étendue, véhicules, bases, espace, planète Cryos,
+missions secondaires. À faire, dans l'ordre : (1) intérieurs de grottes (groupe d'intérieur décalé,
+collisions sol/murs, créatures de grotte) ; (2) directeur d'événements aléatoires (signal, créature rare,
+tempête, épave, anomalie) ; (3) ennemis : couverts, flanc, laisse ; (4) ambiances sous-marines ;
+(5) tests e2e supplémentaires (construction via l'UI, fabrication à l'établi, plongée profonde) ;
+(6) mesures GPU réelles et réduction des draw calls (169 en qualité basse).
